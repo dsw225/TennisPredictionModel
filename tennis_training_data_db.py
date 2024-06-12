@@ -52,43 +52,43 @@ def score_to_num(score, winner_num): #winner num is 1 loser is 2
 
 for i in range(0, 3): #for i in range(0, len(data)):
     #Winning Player NO CALCULATIONS HERE
-    winning_player = (data['winner_id'][i], {
-        'name': data['winner_name'][i],
-        'rank': data['winner_rank'][i],
-        'rank_points': data['winner_rank_points'][i],
+    winning_player = (data.loc[i, 'winner_id'], {
+        'name': data.loc[i, 'winner_name'],
+        'rank': data.loc[i, 'winner_rank'],
+        'rank_points': data.loc[i, 'winner_rank_points'],
         'win': 1,
-        'sets_won': score_to_num(data['score'][i], 1),
-        'sets_lost': score_to_num(data['score'][i], 2),
-        'aces': data['w_ace'][i],
-        'd_faults': data['w_df'][i],
-        'serve_points_played': data['w_svpt'][i],
-        '1st_serves_in': data['w_1stIn'][i],
-        '1st_serves_won': data['w_1stWon'][i],
-        '2nd_serves_won': data['w_2ndWon'][i],
-        'service_games_played': data['w_SvGms'][i],
-        'break_points_saved': data['w_bpSaved'][i],
-        'break_points_faced': data['w_bpFaced'][i]
+        'sets_won': score_to_num(data.loc[i, 'score'], 1),
+        'sets_lost': score_to_num(data.loc[i, 'score'], 2),
+        'aces': data.loc[i, 'w_ace'],
+        'd_faults': data.loc[i, 'w_df'],
+        'serve_points_played': data.loc[i, 'w_svpt'],
+        '1st_serves_in': data.loc[i, 'w_1stIn'],
+        '1st_serves_won': data.loc[i, 'w_1stWon'],
+        '2nd_serves_won': data.loc[i, 'w_2ndWon'],
+        'service_games_played': data.loc[i, 'w_SvGms'],
+        'break_points_saved': data.loc[i, 'w_bpSaved'],
+        'break_points_faced': data.loc[i, 'w_bpFaced']
     })
     # ADD SURFACE TYPE HERE MAYBE
     update_player_data(winning_player[0], winning_player[1])
 
     #Losing Player NO CALCULATIONS HERE
-    losing_player = (data['loser_id'][i], {
-        'name': data['loser_name'][i],
-        'rank': data['loser_rank'][i],
-        'rank_points': data['loser_rank_points'][i],
-        'win': 0, # 1 for win 0 for loss
-        'sets_won': score_to_num(data['score'][i], 2),
-        'sets_lost': score_to_num(data['score'][i], 1),
-        'aces': data['l_ace'][i],
-        'd_faults': data['l_df'][i],
-        'serve_points_played': data['l_svpt'][i],
-        '1st_serves_in': data['l_1stIn'][i],
-        '1st_serves_won': data['l_1stWon'][i],
-        '2nd_serves_won': data['l_2ndWon'][i],
-        'service_games_played': data['l_SvGms'][i],
-        'break_points_saved': data['l_bpSaved'][i],
-        'break_points_faced': data['l_bpFaced'][i],
+    losing_player = (data.loc[i, 'loser_id'], {
+        'name': data.loc[i, 'loser_name'],
+        'rank': data.loc[i, 'loser_rank'],
+        'rank_points': data.loc[i, 'loser_rank_points'],
+        'win': 0,  # 1 for win 0 for loss
+        'sets_won': score_to_num(data.loc[i, 'score'], 2),
+        'sets_lost': score_to_num(data.loc[i, 'score'], 1),
+        'aces': data.loc[i, 'l_ace'],
+        'd_faults': data.loc[i, 'l_df'],
+        'serve_points_played': data.loc[i, 'l_svpt'],
+        '1st_serves_in': data.loc[i, 'l_1stIn'],
+        '1st_serves_won': data.loc[i, 'l_1stWon'],
+        '2nd_serves_won': data.loc[i, 'l_2ndWon'],
+        'service_games_played': data.loc[i, 'l_SvGms'],
+        'break_points_saved': data.loc[i, 'l_bpSaved'],
+        'break_points_faced': data.loc[i, 'l_bpFaced']
     })
     update_player_data(losing_player[0], losing_player[1])
 
