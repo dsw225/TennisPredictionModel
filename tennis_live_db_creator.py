@@ -4,7 +4,6 @@ import requests
 from bs4 import BeautifulSoup
 import json
 import http.client
-import requests
 
 url = "https://api.sportradar.com/tennis/trial/v3/en/rankings.json?api_key=uIr9UTeUVh2WwGEf3l0Bo92sMsMWgB5S6YAfC79R"
 
