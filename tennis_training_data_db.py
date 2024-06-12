@@ -50,7 +50,7 @@ def score_to_num(score, winner_num): #winner num is 1 loser is 2
         sum += num_to_sum
     return sum
 
-for i in range(0, 3): #for i in range(0, len(data)):
+for i in range(0, 1): #for i in range(0, len(data)):
     #Winning Player NO CALCULATIONS HERE
     winning_player = (data.loc[i, 'winner_id'], {
         'name': data.loc[i, 'winner_name'],
@@ -59,7 +59,7 @@ for i in range(0, 3): #for i in range(0, len(data)):
         'win': 1,
         'sets_won': score_to_num(data.loc[i, 'score'], 1),
         'sets_lost': score_to_num(data.loc[i, 'score'], 2),
-        'aces': data.loc[i, 'w_ace'],
+        'aces': data.loc[i, 'w_ace'], 
         'd_faults': data.loc[i, 'w_df'],
         'serve_points_played': data.loc[i, 'w_svpt'],
         '1st_serves_in': data.loc[i, 'w_1stIn'],
