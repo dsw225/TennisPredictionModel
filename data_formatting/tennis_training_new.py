@@ -34,7 +34,7 @@ def convert_date(date_str):
     # Convert to datetime object
     date_obj = datetime.strptime(date_str, "%Y%m%d")
     # Convert to readable format for now
-    date_obj = date_obj.strftime("%B %d, %Y") 
+    # date_obj = date_obj.strftime("%B %d, %Y") 
     return date_obj
 
 header = ['Player', 'Latest_Up', 'Matches', 'Wins', 'Losses', 'Aces', 'DoubleFs', 'Servept', 'Firstin', 'Firstwon', 'Secondwon',
@@ -54,7 +54,8 @@ def add_stats(row, start):
     for k in player_db:
         if k[0] == row[0]:
             k[start:] = [sum(x) for x in zip(k[start:], row[start:])]
-            k[1] = row[1]
+            if k[1] < row[1]:
+                k[1] = row[1]
             return
     player_db.append(row)
 

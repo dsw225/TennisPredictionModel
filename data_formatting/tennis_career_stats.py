@@ -13,7 +13,7 @@ match_min = 40      ## minimum number of matches (with matchstats)
 if mw == 'm':   
     prefix = 'atp'
     input_path = 'csvs/ATP (Mens)/tennis_atp/'
-    yrstart = 2015 ## first season to calculate totals
+    yrstart = 1995 ## first season to calculate totals
 else:
     prefix = 'wta'
     input_path = 'csvs/WTA (Womens)/tennis_wta/'
