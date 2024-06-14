@@ -28,7 +28,7 @@ output_path = 'player_season_totals_' + prefix + '_' + str(yrstart) + '_' + str(
 
 header = ['Player', 'Year', 'Matches', 'Wins', 'Losses', 'Win%',
           'Ace%', 'DF%', '1stIn', '1st%', '2nd%',
-          'SPW%', 'RPW%', 'TPW%', 'DomRatio', 'Hard +/- %', 'Clay +/- %', 'Grass +/- %']
+          'SPW%', 'RPW%', 'TPW%', 'DomRatio', 'AVGOrk']
 player_seasons = [header]
 
 for yr in range(yrstart, yrend + 1):
@@ -58,36 +58,28 @@ for yr in range(yrstart, yrend + 1):
             sum_row.append(this_stat)
         ## calculate aggregates
         match_count = len(pmatches)
-        wins = len([k for k in pmatches if k[10] == pl])
-        losses = match_count - wins
-        win_perc = wins / float(match_count)        
+        wins = 0     
         
-        # surface stat
-        # Initialize counters
-        clay_matches = clay_wins = 0
-        hard_matches = hard_wins = 0
-        grass_matches = grass_wins = 0
+        avg_ork = 0
+        missing_rk = 0
 
-        # Iterate through matches once
         for k in pmatches:
-            if k[2] == 'Clay':
-                clay_matches += 1
-                if k[10] == pl:
-                    clay_wins += 1
-            elif k[2] == 'Hard':
-                hard_matches += 1
-                if k[10] == pl:
-                    hard_wins += 1
-            elif k[2] == 'Grass':
-                grass_matches += 1
-                if k[10] == pl:
-                    grass_wins += 1
+            if k[10] == pl:
+                wins += 1
+                if k[45].isdigit():
+                    avg_ork += int(k[45])
+                else:
+                    missing_rk += 1
+            else:
+                if k[47].isdigit():
+                    avg_ork += int(k[47])
+                else:
+                    missing_rk += 1
 
-        # Calculate factors
-        clay_factor = (clay_wins / float(clay_matches)) / win_perc - 1 if clay_matches >= 5 else 0
-        hard_factor = (hard_wins / float(hard_matches)) / win_perc - 1 if hard_matches >= 5 else 0
-        grass_factor = (grass_wins / float(grass_matches)) / win_perc - 1 if grass_matches >= 5 else 0
-
+        # Remove missing ranks from data
+        avg_ork = (avg_ork) / float(match_count-missing_rk)
+        losses = match_count - wins
+        win_perc = wins / float(match_count)   
 
         ## readable names for serve stats
         aces, dfs, svpt, firstin, firstwon, secondwon = sum_row[1:7]
@@ -106,12 +98,17 @@ for yr in range(yrstart, yrend + 1):
         rpw = retpt - vfirstwon - vsecondwon
         rpw_rate = rpw / float(retpt)
 
+        ## STATS TO ADD / CONSIDER
+        ## SETS % GAMES % HOLD % BRK % TB W %
+        ## Serve + Return Rating and add player rank
+        ## Maybe add per match stats ie. aces/match
+
         tpw_rate = (spw + rpw) / (float(svpt) + retpt)
         dom_ratio = rpw_rate / (1 - spw_rate)
 
         row = [pl, yr, match_count, wins, losses, win_perc,
                ace_rate, df_rate, firstin_rate, first_win, second_win,
-               spw_rate, rpw_rate, tpw_rate, dom_ratio, hard_factor, clay_factor, grass_factor]
+               spw_rate, rpw_rate, tpw_rate, dom_ratio, avg_ork]
         player_seasons.append(row)
 
 with open('csvs/Generated/' + output_path, 'w', newline='') as results:
