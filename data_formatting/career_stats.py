@@ -5,7 +5,7 @@ from collections import Counter
 ## https://github.com/JeffSackmann/tennis_atp/blob/master/examples/query_player_season_totals.py
 ## Altered for training model by Dan Warnick 2024
 
-mw = 'm'            ## 'm' = men, 'w' = women
+mw = '2'            ## 'm' = men, 'w' = women
 yrend = 2023        ## last season to calculate totals
 match_min = 40      ## minimum number of matches (with matchstats)
                     ## a player must have to be included for a given year
@@ -13,11 +13,11 @@ match_min = 40      ## minimum number of matches (with matchstats)
 if mw == 'm':   
     prefix = 'atp'
     input_path = 'csvs/ATP (Mens)/tennis_atp/'
-    yrstart = 2015 ## first season to calculate totals
+    yrstart = 1995 ## first season to calculate totals
 else:
     prefix = 'wta'
     input_path = 'csvs/WTA (Womens)/tennis_wta/'
-    yrstart = 2016 ## first season to calculate totals - NOTE WTA game stats began in 2016, however longest active player is - Venus 1994
+    yrstart = 1995 ## first season to calculate totals - NOTE WTA game stats began in 2016, however longest active player is - Venus 1994
 
 output_path = 'player_career_totals_' + prefix + '_' + str(yrstart) + '_' + str(yrend) + '.csv'
 
@@ -71,8 +71,8 @@ for yr in range(yrstart, yrend + 1):
                     vs_R_wins += 1
                     vs_R_matches += 1
             else:
-                vs_L_matches += 1 if k[19] == 'L' else 0
-                vs_R_matches += 1 if k[19] == 'R' else 0
+                vs_L_matches += 1 if k[11] == 'L' else 0
+                vs_R_matches += 1 if k[11] == 'R' else 0
                     
             if k[2] == 'Clay':
                 clay_matches += 1
