@@ -1,6 +1,5 @@
 import rolling_stats
 import career_stats
-import individual_rolling_stats
 import csv
 import pandas as pd
 from collections import Counter
