@@ -134,7 +134,7 @@ for _, row in matches_df.iterrows():
 new_header = [
     'player_name', 'player_id', 'tourney_date', 'aces', 'dfs', 'svpt', 'firstin', 'firstwon', 'secondwon', 
         'sv_gms', 'bp_saved', 'bp_faced', 'vaces', 'vdfs', 
-        'retpt', 'vfirstin', 'vfirstwon', 'vsecondwon', 'wins', 'matches'
+        'retpt', 'vfirstin', 'vfirstwon', 'vsecondwon', 'win', 'matches'
 ]
 
 player_stats_df = pd.DataFrame(player_stats, columns=new_header)
@@ -147,7 +147,7 @@ def calculate_rolling_averages(df):
     df_copy = df.copy()
     
     # Specify the range of columns to normalize (3:-2) i.e., from the 4th to the 2nd last column
-    columns_to_normalize = df_copy.columns[3:-2]
+    columns_to_normalize = df_copy.columns[3:-1]
     
     # Normalize each specified column by the 'matches' column
     for column in columns_to_normalize:
