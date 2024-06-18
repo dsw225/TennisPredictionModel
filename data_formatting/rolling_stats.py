@@ -119,15 +119,14 @@ def create_individual_stats(row, type):
 player_stats = []
 
 def add_stats(row):
-    temp = datetime(1900, 1, 1)
-    for k in reversed(player_stats):
+    for k in player_stats:
         if k[0] == row[0]:
             row[3:] = [sum(x) for x in zip(k[3:], row[3:])]
             player_stats.append(row)
             return
     player_stats.append(row)
 
-for _, row in matches_df.iterrows():
+for _, row in matches_df.iloc[::-1].iterrows():
     add_stats(create_individual_stats(row, 'win'))
     add_stats(create_individual_stats(row, 'lose'))
 
