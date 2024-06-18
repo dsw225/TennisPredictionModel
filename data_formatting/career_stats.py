@@ -5,19 +5,19 @@ from collections import Counter
 ## https://github.com/JeffSackmann/tennis_atp/blob/master/examples/query_player_season_totals.py
 ## Altered for training model by Dan Warnick 2024
 
-mw = '2'            ## 'm' = men, 'w' = women
+mw = 'm'            ## 'm' = men, 'w' = women
 yrend = 2023        ## last season to calculate totals
-match_min = 40      ## minimum number of matches (with matchstats)
+match_min = 50      ## minimum number of matches (with matchstats)
                     ## a player must have to be included for a given year
 
 if mw == 'm':   
     prefix = 'atp'
     input_path = 'csvs/ATP (Mens)/tennis_atp/'
-    yrstart = 1995 ## first season to calculate totals
+    yrstart = 1968 ## first season to calculate totals
 else:
     prefix = 'wta'
     input_path = 'csvs/WTA (Womens)/tennis_wta/'
-    yrstart = 1995 ## first season to calculate totals - NOTE WTA game stats began in 2016, however longest active player is - Venus 1994
+    yrstart = 1968 ## first season to calculate totals - NOTE WTA game stats began in 2016, however longest active player is - Venus 1994
 
 output_path = 'player_career_totals_' + prefix + '_' + str(yrstart) + '_' + str(yrend) + '.csv'
 
@@ -94,7 +94,7 @@ for yr in range(yrstart, yrend + 1):
                clay_matches, clay_wins, grass_matches, grass_wins]
         add_stats(row)
 
-header = ['Player', 'Matches', 'Hand Preference', 'Hard +/- %', 'Clay +/- %', 'Grass +/- %']
+header = ['Player', 'Matches', 'Win Rate', 'Hand Preference', 'Hard +/- %', 'Clay +/- %', 'Grass +/- %']
 player_career_ratios = [header]
 
 for k in player_seasons:
@@ -122,15 +122,18 @@ for k in player_seasons:
     win_perc = wins / float(match_count) if match_count > 0 else 0
 
     # Surface Specialization
-    clay_factor = (clay_wins / float(clay_matches)) / win_perc - 1 if clay_matches >= 1 else 0
-    hard_factor = (hard_wins / float(hard_matches)) / win_perc - 1 if hard_matches >= 1 else 0
-    grass_factor = (grass_wins / float(grass_matches)) / win_perc - 1 if grass_matches >= 1 else 0
+    # clay_factor = (clay_wins / float(clay_matches)) / win_perc - 1 if clay_matches >= 1 else 0
+    # hard_factor = (hard_wins / float(hard_matches)) / win_perc - 1 if hard_matches >= 1 else 0
+    # grass_factor = (grass_wins / float(grass_matches)) / win_perc - 1 if grass_matches >= 1 else 0
+    clay_factor = (clay_wins / float(clay_matches)) if clay_matches >= 1 else 0
+    hard_factor = (hard_wins / float(hard_matches)) if hard_matches >= 1 else 0
+    grass_factor = (grass_wins / float(grass_matches)) if grass_matches >= 1 else 0
     lefty_factor = (vs_L_wins / float(vs_L_matches)) if vs_L_matches >= 1 else -1
     righty_factor = (vs_R_wins / float(vs_R_matches)) if vs_R_matches >= 1 else -1
     # lefty_factor = ((vs_L_wins / float(vs_L_matches)) - win_perc) / win_perc if vs_L_matches >= 1 else 0
     # righty_factor = ((vs_R_wins / float(vs_R_matches)) - win_perc) / win_perc if vs_R_matches >= 1 else 0
     preference_r_l = righty_factor-lefty_factor if vs_L_matches >= 30 and vs_R_matches >= 30 else 0
-    row = [pl, match_count, preference_r_l, hard_factor, clay_factor, grass_factor]
+    row = [pl, match_count, win_perc, preference_r_l, hard_factor, clay_factor, grass_factor]
 
     player_career_ratios.append(row)
 

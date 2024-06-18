@@ -1,9 +1,9 @@
 import csv
 import pandas as pd
 
-file_path = 'csvs/WTA (Womens)/Odds/2023 Womens Odds.csv'
+file_path = 'csvs/ATP (Mens)/Odds/2021.xlsx'
 
-data = pd.read_csv(file_path)
+data = pd.read_excel(file_path)
 
 vegasCorrect = 0
 vegasWrong = 0
@@ -25,20 +25,20 @@ for i in range(1, len(data)):
     if(float(data.loc[i, 'AvgW']) < float(data.loc[i, 'AvgL'])):
         vegasCorrect += 1
 
-        # if(float(data.loc[i, 'LRank'])<20):
-        #     underdogTotalUnits -= 1
-        #     right += 1
+        if(float(data.loc[i, 'LRank'])<20):
+            underdogTotalUnits -= 1
+            right += 1
 
-        underdogTotalUnits -= 1
+        # underdogTotalUnits -= 1
         favoriteTotalUnits += (data.loc[i, 'AvgW'] - 1)
     elif(float(data.loc[i, 'AvgL']) < float(data.loc[i, 'AvgW'])):
         vegasWrong += 1
 
-        # if(float(data.loc[i, 'WRank'])<20):
-        #     underdogTotalUnits += (data.loc[i, 'AvgW'] - 1)
-        #     right += 1
+        if(float(data.loc[i, 'WRank'])<20):
+            underdogTotalUnits += (data.loc[i, 'AvgW'] - 1)
+            right += 1
 
-        underdogTotalUnits += (data.loc[i, 'AvgW'] - 1)
+        # underdogTotalUnits += (data.loc[i, 'AvgW'] - 1)
         favoriteTotalUnits -= 1
     else:
         splitOdds += 1

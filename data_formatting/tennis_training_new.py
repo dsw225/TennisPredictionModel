@@ -13,7 +13,7 @@ from datetime import datetime
 ## 2015 or SPW% for Sara Errani in 2021.
 
 mw = 'm'            ## 'm' = men, 'w' = women
-yrstart = 2022      ## first season to start calculate totals
+yrstart = 2020      ## first season to start calculate totals
 yrend = 2023        ## last season to calculate totals, will stop at each date
 match_min = 10      ## minimum number of matches (with matchstats)
                     ## a player must have to be included for a given year
