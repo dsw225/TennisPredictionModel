@@ -12,7 +12,7 @@ import pandas as pd
 ## https://github.com/JeffSackmann/tennis_wta]
 
 mw = 'm'            ## 'm' = men, 'w' = women
-yrstart = 2020      ## first season to start calculate totals
+yrstart = 1968      ## first season to start calculate totals
 yrend = 2023        ## last season to calculate totals, will stop at each date
 match_min = 10      ## minimum number of matches (with matchstats) ADD LATER
 
