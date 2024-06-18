@@ -12,8 +12,8 @@ import pandas as pd
 ## https://github.com/JeffSackmann/tennis_wta]
 
 mw = 'm'            ## 'm' = men, 'w' = women
-yrstart = 1968      ## first season to start calculate totals
-yrend = 2023        ## last season to calculate totals, will stop at each date
+datestart = datetime(2021, 6, 2)
+dateend = datetime(2022, 6, 2)
 match_min = 10      ## minimum number of matches (with matchstats) ADD LATER
 
 if mw == 'm':   
@@ -23,10 +23,10 @@ else:
     prefix = 'wta'
     input_path = 'csvs/WTA (Womens)/tennis_wta/'
 
-output_path = 'player_rolling_totals_' + prefix + '_' + str(yrstart) + '_' + str(yrend) + '.csv'
+yrstart = datestart.year      ## first season to start calculate totals
+yrend = dateend.year        ## last season to calculate totals, will stop at each date
 
-def convert_date(date_str):
-    return datetime.strptime(date_str, "%Y%m%d")
+output_path = 'player_rolling_totals_' + prefix + '_' + str(yrstart) + '_' + str(yrend) + '.csv'
 
 # Placeholder for all match data
 all_matches = []
@@ -42,13 +42,13 @@ for yr in range(yrstart, yrend + 1):
         
         next(reader, None)
         
-        matches = [k[:5] + [datetime.strptime(k[5], "%Y%m%d")] + k[6:] for k in reader if 'W' not in k[23] and 'R' not in k[23] and all(k[i] for i in range(27, 45))]
-        ##Below is the function above but less efficient
-        # matches = [row for row in reader if 'W' not in row[23] and 'R' not in row[23]]
-
-        # matches = [k for k in matches if '' not in k[27:45]] 
-
-        # matches = [k[:5] + [datetime.strptime(k[5], "%Y%m%d")] + k[6:] for k in matches]
+        matches = []
+        for row in reader:
+            if 'W' in row[23] or 'R' in row[23] or '' in row[27:45]:
+                continue
+            date = datetime.strptime(row[5], "%Y%m%d")
+            if datestart < date < dateend:
+                matches.append(row[:5] + [date] + row[6:])
         
         all_matches.append(matches)
 
