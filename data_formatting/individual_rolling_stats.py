@@ -3,7 +3,7 @@ from collections import Counter
 from datetime import datetime
 import pandas as pd
 
-## Creates rolling stats/averages for players for any year gap
+## Creates rolling stats/averages for one player for one year
 ## Inspired by Jeff Sackman 2021, Dan Warnick 2024
 ## https://github.com/JeffSackmann/tennis_atp/blob/master/examples/query_player_season_totals.py
 
@@ -13,8 +13,8 @@ import pandas as pd
 
 #Params
 
-def add_stats(row, player_stats, player_name_one, player_name_two):
-    if row[0] == player_name_one or row[0] == player_name_two:
+def add_stats(row, player_stats, player_name):
+    if row[0] == player_name:
         for k in player_stats:
             if k[0] == row[0]:
                 k[3:] = [sum(x) for x in zip(k[3:], row[3:])]
@@ -82,7 +82,7 @@ def calculate_rolling_averages(df):
     
     return df_copy
 
-def create_matchup(player_one, player_two, date, mw):
+def player_year_to_date(player_one, date, mw):
     dateend = datetime.strptime(date, "%Y%m%d")
     datestart = datetime(dateend.year-1, dateend.month, dateend.day)
     match_min = 10      ## minimum number of matches (with matchstats) ADD LATER
@@ -114,7 +114,7 @@ def create_matchup(player_one, player_two, date, mw):
             
             matches = []
             for row in reader:
-                if 'W' in row[23] or 'R' in row[23] or '' in row[27:45] or (player_one != row[10] and player_one != row[18] and player_two != row[10] and player_two != row[18]):
+                if 'W' in row[23] or 'R' in row[23] or '' in row[27:45] or (player_one != row[10] and player_one != row[18]):
                     continue
                 date = datetime.strptime(row[5], "%Y%m%d")
                 if datestart < date < dateend:
@@ -141,8 +141,8 @@ def create_matchup(player_one, player_two, date, mw):
     player_stats = []
 
     for _, row in matches_df.iloc[::-1].iterrows():
-        add_stats(create_individual_stats(row, 'win'), player_stats, player_one, player_two)
-        add_stats(create_individual_stats(row, 'lose'), player_stats, player_one, player_two)
+        add_stats(create_individual_stats(row, 'win'), player_stats, player_one)
+        add_stats(create_individual_stats(row, 'lose'), player_stats, player_one)
 
     new_header = [
         'player_name', 'player_id', 'tourney_date', 'aces', 'dfs', 'svpt', 'firstin', 'firstwon', 'secondwon', 
@@ -152,10 +152,8 @@ def create_matchup(player_one, player_two, date, mw):
 
     player_stats_df = pd.DataFrame(player_stats, columns=new_header)
 
-    # Sort by player_id and date
-    player_stats_df = player_stats_df.sort_values(by=['player_name', 'tourney_date'])
 
     # Return results
     return calculate_rolling_averages(player_stats_df)
 
-print(create_matchup("Novak Djokovic", "Rafael Nadal", "20220524", "m"))
+print(player_year_to_date("Novak Djokovic", "20220524", "m"))
