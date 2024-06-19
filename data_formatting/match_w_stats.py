@@ -1,106 +1,111 @@
 import rolling_stats
 import career_stats
-import csv
 import pandas as pd
-from collections import Counter
+import csv
+from random import random
 from datetime import datetime
 
-mw = 'm'            ## 'm' = men, 'w' = women
-yrstart = 2022      ## first season to start calculate totals
-yrend = 2023        ## last season to calculate totals, will stop at each date
+def create_matchup(match, mw, career_stats):
+    winner = match['winner_name']
+    loser = match['loser_name']
+    whand = match['winner_hand']
+    lhand = match['loser_hand']
+    date = match['tourney_date']
+    surface = match['surface']
 
-if mw == 'm':   
-    prefix = 'atp'
-    input_path = 'csvs/ATP (Mens)/tennis_atp/'
-else:
-    prefix = 'wta'
-    input_path = 'csvs/WTA (Womens)/tennis_wta/'
+    winner_stats = rolling_stats.player_year_to_date(winner, date, mw)
+    loser_stats = rolling_stats.player_year_to_date(loser, date, mw)
+    winner_career = career_stats[career_stats['Player'] == winner]
+    loser_career = career_stats[career_stats['Player'] == loser]
 
-output_path = 'gamesw_avgs' + prefix + '_' + str(yrstart) + '_' + str(yrend) + '.csv'
+    # Dictionary - change later
+    dictionary = {
+        'Hard': ('Hard Wins', 'Hard Matches'),
+        'Clay': ('Clay Wins', 'Clay Matches'),
+        'Grass': ('Grass Wins', 'Grass Matches'),
+        'L': ('Vs Lefty Wins', 'Vs Lefty Matches'),
+        'R': ('Vs Righty Wins', 'Vs Righty Matches')
+    }
 
-for yr in range(yrstart, yrend + 1):
-    ## load one year of match results
-    matches = [row for row in csv.reader(open(input_path + prefix + '_matches_' + str(yr) + '.csv'))]
-    ## exclude incomplete/unplayed matches (e.g. "W/O" or "RET" in score]
-    matches = [k for k in matches if 'W' not in k[23] and 'R' not in k[23]]
-    ## make list of all players with a result
-    players = [k[10] for k in matches] + [k[18] for k in matches]
-    dates = [k[5] for k in matches]
-    ## limit list of players to those with at least match_min matches
-    qualifs = [k for k, v in Counter(players).items()] 
-    single_dates = [k for k, v in Counter(dates).items()] 
-    
-    #Changed Name for ID first
+    wins, matches = dictionary.get(surface, (None, None))
+    w_surface_win_ratio = float(winner_career[wins].iloc[0]) / winner_career[matches].iloc[0] if wins and matches else 0
+    l_surface_win_ratio = float(loser_career[wins].iloc[0]) / loser_career[matches].iloc[0] if wins and matches else 0
+    whWins, whMatches = dictionary.get(lhand, (None, None))
+    lhWins, lhMatches = dictionary.get(whand, (None, None))
+    w_hand_win_ratio = float(winner_career[whWins].iloc[0]) / winner_career[whMatches].iloc[0] if whWins and whMatches else 0
+    l_hand_win_ratio = float(loser_career[lhWins].iloc[0]) / loser_career[lhMatches].iloc[0] if lhWins and lhMatches else 0
 
-    for pl in qualifs:
-        ## find all of the players matches
-        pmatches = [k for k in matches if pl in [k[10], k[18]]]
-        ## make matrix of their stats (different columns depending if they won or lost)
-        pstats = [k[27:36] + k[36:45] if pl == k[10] else k[36:45] + k[27:36] for k in pmatches]
-        # pdata = [k[10] if pl == k[7] else k[18] for k in pmatches]
-        ## make row for their aggregate counting stats, starting with number of matches [with stats]
-        sum_row = [len(pstats)]
-        for i in range(len(pstats[0])):
-            this_stat = sum([int(k[i]) for k in pstats if k[i].isdigit()])
-            sum_row.append(this_stat)
-        ## calculate aggregates
-        match_count = len(pmatches)
-        wins = 0     
+    # Randomize which side wins
+    if(round(random()) > 0):
+        return [
+                date, surface, #Temporary
+                winner, loser, w_surface_win_ratio, w_hand_win_ratio,
+                *winner_stats.iloc[0, 20:].tolist(),
+
+                l_surface_win_ratio, l_hand_win_ratio,
+                *loser_stats.iloc[0, 20:].tolist(),
+                
+                1 #For 1st player win
+        ]
+    else:
+        return [
+                date, surface,
+                loser, winner, l_surface_win_ratio, l_hand_win_ratio,
+                *loser_stats.iloc[0, 20:].tolist(),
+
+
+                w_surface_win_ratio, w_hand_win_ratio,
+                *winner_stats.iloc[0, 20:].tolist(),
+                
+                0 #For 1st player loss
+        ]
+
+
+def data_set_creator(yr, mw):
+    if mw == 'm':   
+        prefix = 'atp'
+        input_path = 'csvs/ATP (Mens)/tennis_atp/'
+    else:
+        prefix = 'wta'
+        input_path = 'csvs/WTA (Womens)/tennis_wta/'
+
+    file_path = f"{input_path}{prefix}_matches_{yr}.csv"
+    df = pd.read_csv(file_path) # df = pd.read_csv(file_path, parse_dates=['tourney_date'])
+
+    df = df[
+            ~(
+                df.iloc[:, 23].str.contains('W') | 
+                df.iloc[:, 23].str.contains('R') |
+                (df.iloc[:, 27:45].isnull().values.any(axis=1))
+            )
+        ]
+
+    total_career_stats = career_stats.career_stats((str(yr) + "12" + "30"), mw)
+
+    all_matches = []
+
+    for i, row in df.iterrows():
+        try:
+            all_matches.append(create_matchup(row, mw, total_career_stats))
+            print(str(i) + " games processed")
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            pass
         
-        avg_ork = 0
-        missing_rk = 0
+    new_header = [
+        'date', 'surface', 'player_one', 'p1_surface_win_ratio', 'p1_hand_win_ratio', 'aces_p1_avg', 'dfs_p1_avg', 'svpt_p1_avg', 'firstin_p1_avg', 'firstwon_p1_avg', 
+        'secondwon_p1_avg', 'sv_gms_p1_avg', 'bp_saved_p1_avg', 'bp_faced_p1_avg', 'vaces_p1_avg', 'vdfs_p1_avg', 'retpt_p1_avg', 'vfirstin_p1_avg', 
+        'vfirstwon_p1_avg', 'vsecondwon_p1_avg', 'win_p1_avg',                  'player_two', 'p2_surface_win_ratio', 'p2_hand_win_ratio', 'aces_p2_avg', 'dfs_p2_avg', 'svpt_p2_avg', 'firstin_p2_avg', 'firstwon_p2_avg', 
+        'secondwon_p2_avg', 'sv_gms_p2_avg', 'bp_saved_p2_avg', 'bp_faced_p2_avg', 'vaces_p2_avg', 'vdfs_p2_avg', 'retpt_p2_avg', 'vfirstin_p2_avg', 
+        'vfirstwon_p2_avg', 'vsecondwon_p2_avg', 'win_p2_avg', 'p1_win?'
+    ]
 
-        
-        for k in pmatches:
-            date = convert_date(k[5])
-            if k[10] == pl:
-                wins += 1
-                if k[45].isdigit():
-                    avg_ork += int(k[45])
-                else:
-                    missing_rk += 1
-            else:
-                if k[47].isdigit():
-                    avg_ork += int(k[47])
-                else:
-                    missing_rk += 1
+    player_stats_df = pd.DataFrame(all_matches, columns=new_header)
 
-        # Remove missing ranks from data
-        # avg_ork = (avg_ork) / float(match_count-missing_rk)
-        losses = match_count - wins
-        # win_perc = wins / float(match_count)   
+    output_path = 'stats_' + prefix + '_' + str(yr) + '.csv'
 
-        ## readable names for serve stats
-        aces, dfs, svpt, firstin, firstwon, secondwon, w_SvGms, w_bpSaved, w_bpFaced, vaces, vdfs, retpt, vfirstin, vfirstwon, vsecondwon= sum_row[1:16]
-        ## calculate common rate stats
-        # ace_rate = aces / float(svpt)
-        # df_rate = dfs / float(svpt)
-        # firstin_rate = firstin / float(svpt)
-        # first_win = firstwon / float(firstin)
-        # second_win = secondwon / (svpt - float(firstin))
-        # spw = firstwon + secondwon
-        # spw_rate = spw / float(svpt)
+    player_stats_df.to_csv('csvs/Generated/' + output_path, index=False)
+    print("Done")
 
-        # ## raw return stats
-        # vaces, vdfs, retpt, vfirstin, vfirstwon, vsecondwon = sum_row[10:16]
-        # ## calculate more aggregates
-        # rpw = retpt - vfirstwon - vsecondwon
-        # rpw_rate = rpw / float(retpt)
-
-        ## STATS TO ADD / CONSIDER
-        ## SETS % GAMES % HOLD % BRK % TB W %
-        ## Serve + Return Rating and add player rank
-        ## Maybe add per match stats ie. aces/match
-
-        # tpw_rate = (spw + rpw) / (float(svpt) + retpt)
-        # dom_ratio = rpw_rate / (1 - spw_rate)
-
-        row = [pl, date, match_count, wins, losses, aces, dfs, svpt, firstin, 
-               firstwon, secondwon, w_SvGms, w_bpSaved, w_bpFaced, vaces, vdfs, 
-               retpt, vfirstin, vfirstwon, vsecondwon, avg_ork]
-        add_stats(row, 2)
-
-with open('csvs/Generated/' + output_path, 'w', newline='') as results:
-    writer = csv.writer(results)
-    for row in player_db:
-        writer.writerow(row)
+#Test
+data_set_creator(2022, 'm')

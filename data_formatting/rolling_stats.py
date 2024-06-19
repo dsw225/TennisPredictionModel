@@ -63,7 +63,7 @@ def calculate_rolling_averages(df):
     return df
 
 def player_year_to_date(player_one, date, mw):
-    dateend = datetime.strptime(date, "%Y%m%d")
+    dateend = datetime.strptime(str(date), "%Y%m%d")
     datestart = datetime(dateend.year-1, dateend.month, dateend.day)
     if mw == 'm':   
         prefix = 'atp'
@@ -111,7 +111,7 @@ def player_year_to_date(player_one, date, mw):
 
 
 def all_year_to_date(date, mw):
-    dateend = datetime.strptime(date, "%Y%m%d")
+    dateend = datetime.strptime(str(date), "%Y%m%d")
     datestart = datetime(dateend.year-1, dateend.month, dateend.day)
     if mw == 'm':   
         prefix = 'atp'

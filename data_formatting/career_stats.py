@@ -1,5 +1,3 @@
-import csv
-from collections import Counter
 import pandas as pd
 from datetime import datetime
 
@@ -55,7 +53,7 @@ def create_career_stats(row, type):
 
 def career_stats(date, mw):
     dateend = datetime.strptime(date, "%Y%m%d")
-    datestart = datetime(1968, 1, 1)
+    datestart = datetime(1990, 1, 1) # For now
     if mw == 'm':   
         prefix = 'atp'
         input_path = 'csvs/ATP (Mens)/tennis_atp/'
@@ -87,11 +85,11 @@ def career_stats(date, mw):
         add_c_stats(create_career_stats(row, 'win'), player_stats)
         add_c_stats(create_career_stats(row, 'lose'), player_stats)
 
-    new_header = ['Player', 'Matches', 'Wins', 'Losses', 'Vs Lefty Matches', 'Vs Lefty Wins', 'Vs Righty Matches', 'Vs Right Wins', 
+    new_header = ['Player', 'Matches', 'Wins', 'Losses', 'Vs Lefty Matches', 'Vs Lefty Wins', 'Vs Righty Matches', 'Vs Righty Wins', 
           'Hard Matches', 'Hard Wins', 'Clay Matches', 'Clay Wins', 'Grass Matches', 'Grass Wins']
 
     player_stats_df = pd.DataFrame(player_stats, columns=new_header)
-    player_stats_df = player_stats_df[player_stats_df['Matches']>50]
+    player_stats_df = player_stats_df[player_stats_df['Matches']>0] #player_stats_df = player_stats_df[player_stats_df['Matches']>50]
     return player_stats_df
 
 # print(career_stats('20220101','m'))
