@@ -129,7 +129,8 @@ def update_elo(player_a, player_b, winner, level, match_date, match_num, surface
     
     kA = 250 / ((players_elo.at[idxA, 'Matches'] + 5) ** 0.4)
     kB = 250 / ((players_elo.at[idxB, 'Matches'] + 5) ** 0.4)
-    k = 1.1 if level == "G" else 1
+    # k = 1.1 if level == "G" else 1
+    k=1
     
     rA_new = rA + (k * kA) * (sA - eA)
     rB_new = rB + (k * kB) * (sB - eB)
