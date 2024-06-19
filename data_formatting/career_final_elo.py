@@ -19,6 +19,12 @@ def career_stats(date, mw):
         file_path = f"{input_path}{prefix}_matches_{yr}.csv"
         df = pd.read_csv(file_path, parse_dates=['tourney_date'])
 
+        # df1 = pd.read_csv(file_path_1, parse_dates=['tourney_date'])
+        # df2 = pd.read_csv(file_path_2, parse_dates=['tourney_date'])
+
+        # # Concatenate the DataFrames
+        # df = pd.concat([df1, df2], ignore_index=True)
+
         # Filter relevant matches
         df = df[
             (df['tourney_date'] > datestart) & 
