@@ -42,15 +42,16 @@ def career_stats(date, mw):
 
     players_to_elo = combined_names.drop_duplicates().tolist()
 
-    new_header = ['Player', 'Date', 'Number', 'Matches', 'Wins', 'Elo', 'Lefty Elo', 'Righty Elo', 'Hard Elo', 'Clay Elo', 'Grass Elo']
+    new_header = ['Player', 'Date', 'Number', 'Matches', 'Sets Played', 'Elo', 'Sets Elo', 'Lefty Elo', 'Righty Elo', 'Hard Elo', 'Clay Elo', 'Grass Elo']
 
     data = {
         'Player': players_to_elo,
         'Date': [datetime(1900, 1, 1)] * len(players_to_elo),
         'Number': [0] * len(players_to_elo),
         'Matches': [0] * len(players_to_elo),
-        'Wins': [0] * len(players_to_elo),
+        'Sets Played': [0] * len(players_to_elo),
         'Elo': [1500] * len(players_to_elo),
+        'Sets Elo': [1500] * len(players_to_elo),
         'Lefty Elo': [1500] * len(players_to_elo),
         'Righty Elo': [1500] * len(players_to_elo),
         'Hard Elo': [1500] * len(players_to_elo),
@@ -73,7 +74,8 @@ def career_stats(date, mw):
                 row["match_num"],
                 row["surface"],
                 row["winner_hand"],
-                row["loser_hand"]
+                row["loser_hand"],
+                row['score']
             )
         except Exception as e:
             print(f"An error occurred: {e}")
@@ -83,7 +85,7 @@ def career_stats(date, mw):
     print("Done")
 
 
-def update_elo(player_a, player_b, winner, level, match_date, match_num, surface, winner_hand, loser_hand):
+def update_elo(player_a, player_b, winner, level, match_date, match_num, surface, winner_hand, loser_hand, score):
     if player_a.empty or player_b.empty:
         print("Error: One of the players not found in players_elo DataFrame")
         return
@@ -169,6 +171,8 @@ def update_elo(player_a, player_b, winner, level, match_date, match_num, surface
         players_elo.at[idxB, 'Grass Elo'] = rB_surface_new
 
     # General updates
+    calculate_sets_elo(player_a, player_b, winner, score)
+    
     players_elo.at[idxA, 'Elo'] = rA_new
     players_elo.at[idxA, 'Date'] = match_date
     players_elo.at[idxA, 'Number'] = match_num
@@ -179,4 +183,52 @@ def update_elo(player_a, player_b, winner, level, match_date, match_num, surface
     players_elo.at[idxB, 'Number'] = match_num
     players_elo.at[idxB, 'Matches'] += 1
 
+
+def calculate_sets_elo(player_a, player_b, winner, score):
+    if player_a.empty or player_b.empty:
+        print("Error: One of the players not found in players_elo DataFrame")
+        return
+
+    idxA = player_a.index[0]
+    idxB = player_b.index[0]
+
+    score = score.split(' ')
+    sA = 0
+    sB = 0
+    for set_score in score:
+        # Remove tie-break scores if present    
+        if '(' in set_score:
+            set_score = set_score.split('(')[0]
+        
+        # Split the set score into individual games
+        set_score = set_score.split('-')
+    
+        sA += int(set_score[0]) if winner == players_elo.at[idxA, 'Player'] else int(set_score[1])
+        sB += int(set_score[1]) if winner == players_elo.at[idxA, 'Player'] else int(set_score[0])
+
+    total_sets = sA + sB
+
+    sA = sA / total_sets
+    sB = sB / total_sets
+
+    rA_sets = players_elo.at[idxA, 'Sets Elo']
+    rB_sets = players_elo.at[idxB, 'Sets Elo']
+
+    kA = 425 / ((players_elo.at[idxA, 'Sets Played'] + 5) ** 0.4)
+    kB = 425 / ((players_elo.at[idxB, 'Sets Played'] + 5) ** 0.4)
+    # k = 1.1 if level == "G" else 1
+    k=1
+
+    eA = 1 / (1 + 10 ** ((rB_sets - rA_sets) / 400))
+    eB = 1 / (1 + 10 ** ((rA_sets - rB_sets) / 400))
+
+    rA_sets_new = rA_sets + (k * kA) * (sA - eA)
+    rB_sets_new = rB_sets + (k * kB) * (sB - eB)
+
+    players_elo.at[idxA, 'Sets Elo'] = rA_sets_new
+    players_elo.at[idxA, 'Sets Played'] += total_sets
+
+    players_elo.at[idxB, 'Sets Elo'] = rB_sets_new
+    players_elo.at[idxB, 'Sets Played'] += total_sets
+        
 career_stats('20231231','m')
