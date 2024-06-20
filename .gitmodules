@@ -4,3 +4,6 @@
 [submodule "csvs/ATP (Mens)/tennis_atp"]
 	path = csvs/ATP (Mens)/tennis_atp
 	url = https://github.com/JeffSackmann/tennis_atp
+[submodule "data_formatting/glicko2"]
+	path = data_formatting/glicko2
+	url = https://github.com/dsw225/glicko2
