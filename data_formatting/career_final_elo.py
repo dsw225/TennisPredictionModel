@@ -65,17 +65,10 @@ def career_stats(date, mw):
     for index, row in matches_df.iterrows():
         print(f"Processing match index: {index}, Winner: {row['winner_name']}, Loser: {row['loser_name']}")
         try:
-            update_elo(
+            update_elos(
                 players_elo.loc[players_elo['Player'] == row["winner_name"]], 
                 players_elo.loc[players_elo['Player'] == row["loser_name"]], 
-                row["winner_name"], 
-                row["tourney_level"], 
-                row["tourney_date"], 
-                row["match_num"],
-                row["surface"],
-                row["winner_hand"],
-                row["loser_hand"],
-                row['score']
+                row
             )
         except Exception as e:
             print(f"An error occurred: {e}")
@@ -85,7 +78,7 @@ def career_stats(date, mw):
     print("Done")
 
 
-def update_elo(player_a, player_b, winner, level, match_date, match_num, surface, winner_hand, loser_hand, score):
+def update_elos(player_a, player_b, row):
     if player_a.empty or player_b.empty:
         print("Error: One of the players not found in players_elo DataFrame")
         return
@@ -96,18 +89,8 @@ def update_elo(player_a, player_b, winner, level, match_date, match_num, surface
     rA = players_elo.at[idxA, 'Elo']
     rB = players_elo.at[idxB, 'Elo']
 
-    # Determine which Elo ratings to use/update
-    # if winner_hand == 'L':
-    #     rB_hand = players_elo.at[idxB, 'Lefty Elo']
-    # else:
-    #     rB_hand = players_elo.at[idxB, 'Righty Elo']
-    
-    # if loser_hand == 'L':
-    #     rA_hand = players_elo.at[idxA, 'Lefty Elo']
-    # else:
-    #     rA_hand = players_elo.at[idxA, 'Righty Elo']
-
     # Surface-specific Elo
+    surface = row['surface']
     if surface == 'Hard':
         rA_surface = players_elo.at[idxA, 'Hard Elo']
         rB_surface = players_elo.at[idxB, 'Hard Elo']
@@ -127,37 +110,47 @@ def update_elo(player_a, player_b, winner, level, match_date, match_num, surface
     eA_surface = 1 / (1 + 10 ** ((rB_surface - rA_surface) / 400))
     eB_surface = 1 / (1 + 10 ** ((rA_surface - rB_surface) / 400))
 
-    # eA_hand = 1 / (1 + 10 ** ((rB_hand - rA_hand) / 400))
-    # eB_hand = 1 / (1 + 10 ** ((rA_hand - rB_hand) / 400))
-
-    if winner == players_elo.at[idxA, 'Player']:
-        sA, sB = 1, 0
+    # We know player A won
+    sA, sB = 1, 0
+    
+    # Add future changes:
+    # Tournament level adjustment is: Grand Slam 100%, Tour Finals 90%, Masters 85%, Olympics 80%, ATP 500 75% and all others 70%
+    if "G" == row['tourney_name']:
+        tournament_level = 1.0
+    elif "Tour Finals" in row['tourney_name']:
+        tournament_level = .9
+    elif "M" in row['tourney_name']:
+        tournament_level = .85
+    elif "Olympics" in row['tourney_name']:
+        tournament_level = .8
     else:
-        sA, sB = 0, 1
-    
-    kA = 250 / ((players_elo.at[idxA, 'Matches'] + 5) ** 0.4)
-    kB = 250 / ((players_elo.at[idxB, 'Matches'] + 5) ** 0.4)
-    # k = 1.1 if level == "G" else 1
-    k=1
-    
-    rA_new = rA + (k * kA) * (sA - eA)
-    rB_new = rB + (k * kB) * (sB - eB)
-    
-    rA_surface_new = rA_surface + (k * kA) * (sA - eA_surface)
-    rB_surface_new = rB_surface + (k * kB) * (sB - eB_surface)
+        tournament_level = .7
+    # Match round adjustment is: Final 100%, Semi-Final 90%, Quarter-Final and Round-Robin 85%, Rounds of 16 and 32 80%, Rounds of 64 and 128 75% and For Bronze Medal 95%
+    match_round = .8 #Temp
+    # Walkover is 50%
 
-    # rA_hand_new = rA_hand + (k * kA) * (sA - eA_hand)
-    # rB_hand_new = rB_hand + (k * kB) * (sB - eB_hand)
-    
-    # if winner_hand == 'L':
-    #     players_elo.at[idxB, 'Lefty Elo'] = rB_hand_new
-    # else:
-    #     players_elo.at[idxB, 'Righty Elo'] = rB_hand_new
+    # K-factor base value is 32
+    k_base = 32
 
-    # if loser_hand == 'L':
-    #     players_elo.at[idxA, 'Lefty Elo'] = rA_hand_new
-    # else:
-    #     players_elo.at[idxA, 'Righty Elo'] = rA_hand_new
+    # Best-of sets adjustment: Best-of-5 100% and Best-of-3 90%
+    best_factor = .9 if row['best_of'] == 3 else 1
+    
+    # # Current rating adjustment (this allows lower ranked players to advance more rapidly, while stabilizes ratings at the top):
+    kFunctionA = 1 + 18 / (1 + 2 * (rA - 1500) / 63)
+    kFunctionB = 1 + 18 / (1 + 2 * (rB - 1500) / 63)
+
+    kA = 5 / ((players_elo.at[idxA, 'Matches'] + 5) ** 0.4)
+    kB = 5 / ((players_elo.at[idxB, 'Matches'] + 5) ** 0.4)
+    
+    kA = best_factor * rating_adjustmentA * tournament_level * match_round * kA
+    kB = best_factor * rating_adjustmentB * tournament_level * match_round * kB
+    
+    
+    rA_new = rA +  kA * (sA - eA)
+    rB_new = rB +  kB * (sB - eB)
+    
+    rA_surface_new = rA_surface + (k_base * kA) * (sA - eA_surface)
+    rB_surface_new = rB_surface + (k_base * kB) * (sB - eB_surface)
 
     # Update surface-specific Elo
     if surface == 'Hard':
@@ -171,8 +164,11 @@ def update_elo(player_a, player_b, winner, level, match_date, match_num, surface
         players_elo.at[idxB, 'Grass Elo'] = rB_surface_new
 
     # General updates
-    calculate_sets_elo(player_a, player_b, winner, score)
+    # calculate_sets_elo(player_a, player_b, winner, score)
     
+
+    match_date = row['tourney_date']
+    match_num = row['match_num']
     players_elo.at[idxA, 'Elo'] = rA_new
     players_elo.at[idxA, 'Date'] = match_date
     players_elo.at[idxA, 'Number'] = match_num
@@ -214,8 +210,8 @@ def calculate_sets_elo(player_a, player_b, winner, score):
     rA_sets = players_elo.at[idxA, 'Sets Elo']
     rB_sets = players_elo.at[idxB, 'Sets Elo']
 
-    kA = 425 / ((players_elo.at[idxA, 'Sets Played'] + 5) ** 0.4)
-    kB = 425 / ((players_elo.at[idxB, 'Sets Played'] + 5) ** 0.4)
+    kA = 250 / ((players_elo.at[idxA, 'Sets Played'] + 5) ** 0.4)
+    kB = 250 / ((players_elo.at[idxB, 'Sets Played'] + 5) ** 0.4)
     # k = 1.1 if level == "G" else 1
     k=1
 
@@ -230,5 +226,6 @@ def calculate_sets_elo(player_a, player_b, winner, score):
 
     players_elo.at[idxB, 'Sets Elo'] = rB_sets_new
     players_elo.at[idxB, 'Sets Played'] += total_sets
+
         
 career_stats('20231231','m')
