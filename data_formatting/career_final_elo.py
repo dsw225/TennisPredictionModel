@@ -73,7 +73,8 @@ def career_stats(date, mw):
     players_elo = pd.DataFrame(data, columns=new_header)
 
     for index, row in matches_df.iterrows():
-        print(f"Processing match index: {index}, Winner: {row['winner_name']}, Loser: {row['loser_name']}")
+        if index % 1000 == 0:
+            print(f"Processing Elos @ Match indexes: {index} - {index+1000}")
         try:
             update_elos(
                 players_elo.loc[players_elo['Player'] == row["winner_name"]], 
@@ -100,7 +101,7 @@ def update_elos(player_a, player_b, row):
     rB = players_elo.at[idxB, 'Elo']
 
     # We know player A won
-    delta = delta_rating(rA, rB, row['tourney_level'], row['tourney_name'], 1, int(row['best_of']), "N/A")
+    delta = delta_rating(rA, rB, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A")
     
     rA_new = new_rating(rA, delta)
     rB_new = new_rating(rB, -delta)
@@ -132,15 +133,14 @@ def k_factor(level, tourney_name, round, best_of, outcome):
         k *= .7
     else:
         k *=.65
-    # Match round adjustment is: Final 100%, Semi-Final 90%, Quarter-Final and Round-Robin 85%, Rounds of 16 and 32 80%, Rounds of 64 and 128 75% and For Bronze Medal 95%
-    match_round = .8 #Temp
 
+    # Match round adjustment is: Final 100%, Semi-Final 90%, Quarter-Final and Round-Robin 85%, Rounds of 16 and 32 80%, Rounds of 64 and 128 75% and For Bronze Medal 95%
     round_factors = {
         "F": 1.0, "BR": 0.95, "SF": 0.90, "QF": 0.85, "R16": 0.80, "R32": 0.80,
         "R64": 0.75, "R128": 0.75, "RR": 0.85
     }
 
-    k *= match_round
+    k *= round_factors.get(round, 1.0)
     
     if best_of < 5:
         k *= 0.90

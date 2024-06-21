@@ -1,7 +1,7 @@
 import csv
 import pandas as pd
 
-file_path = 'csvs/ATP (Mens)/Odds/2021.xlsx'
+file_path = 'csvs/ATP (Mens)/Odds/2022.xlsx'
 
 data = pd.read_excel(file_path)
 
