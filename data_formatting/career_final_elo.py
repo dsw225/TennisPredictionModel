@@ -1,5 +1,21 @@
 import pandas as pd
 from datetime import datetime
+from math import pow, copysign
+
+START_RATING = 1500
+RATING_SCALE = 480.0 # https://en.wikipedia.org/wiki/Elo_rating_system#Suggested_modification Try for a little
+K_FACTOR = 32.0
+K_FUNCTION_AMPLIFIER = 10.0
+K_FUNCTION_AMPLIFIER_GRADIENT = 63.0
+K_FUNCTION_MULTIPLIER = 2.0 * (K_FUNCTION_AMPLIFIER - 1.0)
+DELTA_RATING_CAP = 200.0
+
+RECENT_K_FACTOR = 2.0
+SET_K_FACTOR = 0.5
+GAME_K_FACTOR = 0.0556
+SERVICE_GAME_K_FACTOR = 0.1667
+RETURN_GAME_K_FACTOR = 0.1667
+TIE_BREAK_K_FACTOR = 1.5
 
 def career_stats(date, mw):
     dateend = datetime.strptime(date, "%Y%m%d")
@@ -18,12 +34,6 @@ def career_stats(date, mw):
     for yr in range(datestart.year, dateend.year+1):
         file_path = f"{input_path}{prefix}_matches_{yr}.csv"
         df = pd.read_csv(file_path, parse_dates=['tourney_date'])
-
-        # df1 = pd.read_csv(file_path_1, parse_dates=['tourney_date'])
-        # df2 = pd.read_csv(file_path_2, parse_dates=['tourney_date'])
-
-        # # Concatenate the DataFrames
-        # df = pd.concat([df1, df2], ignore_index=True)
 
         # Filter relevant matches
         df = df[
@@ -50,13 +60,13 @@ def career_stats(date, mw):
         'Number': [0] * len(players_to_elo),
         'Matches': [0] * len(players_to_elo),
         'Sets Played': [0] * len(players_to_elo),
-        'Elo': [1500] * len(players_to_elo),
-        'Sets Elo': [1500] * len(players_to_elo),
-        'Lefty Elo': [1500] * len(players_to_elo),
-        'Righty Elo': [1500] * len(players_to_elo),
-        'Hard Elo': [1500] * len(players_to_elo),
-        'Clay Elo': [1500] * len(players_to_elo),
-        'Grass Elo': [1500] * len(players_to_elo)
+        'Elo': [START_RATING] * len(players_to_elo),
+        'Sets Elo': [START_RATING] * len(players_to_elo),
+        'Lefty Elo': [START_RATING] * len(players_to_elo),
+        'Righty Elo': [START_RATING] * len(players_to_elo),
+        'Hard Elo': [START_RATING] * len(players_to_elo),
+        'Clay Elo': [START_RATING] * len(players_to_elo),
+        'Grass Elo': [START_RATING] * len(players_to_elo)
     }
 
     global players_elo
@@ -89,83 +99,11 @@ def update_elos(player_a, player_b, row):
     rA = players_elo.at[idxA, 'Elo']
     rB = players_elo.at[idxB, 'Elo']
 
-    # Surface-specific Elo
-    surface = row['surface']
-    if surface == 'Hard':
-        rA_surface = players_elo.at[idxA, 'Hard Elo']
-        rB_surface = players_elo.at[idxB, 'Hard Elo']
-    elif surface == 'Clay':
-        rA_surface = players_elo.at[idxA, 'Clay Elo']
-        rB_surface = players_elo.at[idxB, 'Clay Elo']
-    elif surface == 'Grass':
-        rA_surface = players_elo.at[idxA, 'Grass Elo']
-        rB_surface = players_elo.at[idxB, 'Grass Elo']
-    else:
-        rA_surface = rA
-        rB_surface = rB
-
-    eA = 1 / (1 + 10 ** ((rB - rA) / 400))
-    eB = 1 / (1 + 10 ** ((rA - rB) / 400))
-    
-    eA_surface = 1 / (1 + 10 ** ((rB_surface - rA_surface) / 400))
-    eB_surface = 1 / (1 + 10 ** ((rA_surface - rB_surface) / 400))
-
     # We know player A won
-    sA, sB = 1, 0
+    delta = delta_rating(rA, rB, row['tourney_level'], row['tourney_name'], 1, int(row['best_of']), "N/A")
     
-    # Add future changes:
-    # Tournament level adjustment is: Grand Slam 100%, Tour Finals 90%, Masters 85%, Olympics 80%, ATP 500 75% and all others 70%
-    if "G" == row['tourney_name']:
-        tournament_level = 1.0
-    elif "Tour Finals" in row['tourney_name']:
-        tournament_level = .9
-    elif "M" in row['tourney_name']:
-        tournament_level = .85
-    elif "Olympics" in row['tourney_name']:
-        tournament_level = .8
-    else:
-        tournament_level = .7
-    # Match round adjustment is: Final 100%, Semi-Final 90%, Quarter-Final and Round-Robin 85%, Rounds of 16 and 32 80%, Rounds of 64 and 128 75% and For Bronze Medal 95%
-    match_round = .8 #Temp
-    # Walkover is 50%
-
-    # K-factor base value is 32
-    k_base = 32
-
-    # Best-of sets adjustment: Best-of-5 100% and Best-of-3 90%
-    best_factor = .9 if row['best_of'] == 3 else 1
-    
-    # # Current rating adjustment (this allows lower ranked players to advance more rapidly, while stabilizes ratings at the top):
-    kFunctionA = 1 + 18 / (1 + 2 * (rA - 1500) / 63)
-    kFunctionB = 1 + 18 / (1 + 2 * (rB - 1500) / 63)
-
-    kA = 5 / ((players_elo.at[idxA, 'Matches'] + 5) ** 0.4)
-    kB = 5 / ((players_elo.at[idxB, 'Matches'] + 5) ** 0.4)
-    
-    kA = best_factor * rating_adjustmentA * tournament_level * match_round * kA
-    kB = best_factor * rating_adjustmentB * tournament_level * match_round * kB
-    
-    
-    rA_new = rA +  kA * (sA - eA)
-    rB_new = rB +  kB * (sB - eB)
-    
-    rA_surface_new = rA_surface + (k_base * kA) * (sA - eA_surface)
-    rB_surface_new = rB_surface + (k_base * kB) * (sB - eB_surface)
-
-    # Update surface-specific Elo
-    if surface == 'Hard':
-        players_elo.at[idxA, 'Hard Elo'] = rA_surface_new
-        players_elo.at[idxB, 'Hard Elo'] = rB_surface_new
-    elif surface == 'Clay':
-        players_elo.at[idxA, 'Clay Elo'] = rA_surface_new
-        players_elo.at[idxB, 'Clay Elo'] = rB_surface_new
-    elif surface == 'Grass':
-        players_elo.at[idxA, 'Grass Elo'] = rA_surface_new
-        players_elo.at[idxB, 'Grass Elo'] = rB_surface_new
-
-    # General updates
-    # calculate_sets_elo(player_a, player_b, winner, score)
-    
+    rA_new = new_rating(rA, delta)
+    rB_new = new_rating(rB, -delta)
 
     match_date = row['tourney_date']
     match_num = row['match_num']
@@ -180,52 +118,97 @@ def update_elos(player_a, player_b, row):
     players_elo.at[idxB, 'Matches'] += 1
 
 
-def calculate_sets_elo(player_a, player_b, winner, score):
-    if player_a.empty or player_b.empty:
-        print("Error: One of the players not found in players_elo DataFrame")
-        return
+def k_factor(level, tourney_name, round, best_of, outcome):
+    k = K_FACTOR
+    if "G" == level:
+        k *= 1.0
+    elif "Tour Finals" in tourney_name:
+        k *= .9
+    elif "M" in level:
+        k *= .85
+    elif "Olympics" in tourney_name:
+        k *= .8
+    elif "A" in level:
+        k *= .7
+    else:
+        k *=.65
+    # Match round adjustment is: Final 100%, Semi-Final 90%, Quarter-Final and Round-Robin 85%, Rounds of 16 and 32 80%, Rounds of 64 and 128 75% and For Bronze Medal 95%
+    match_round = .8 #Temp
 
-    idxA = player_a.index[0]
-    idxB = player_b.index[0]
+    round_factors = {
+        "F": 1.0, "BR": 0.95, "SF": 0.90, "QF": 0.85, "R16": 0.80, "R32": 0.80,
+        "R64": 0.75, "R128": 0.75, "RR": 0.85
+    }
 
-    score = score.split(' ')
-    sA = 0
-    sB = 0
-    for set_score in score:
-        # Remove tie-break scores if present    
-        if '(' in set_score:
-            set_score = set_score.split('(')[0]
-        
-        # Split the set score into individual games
-        set_score = set_score.split('-')
+    k *= match_round
     
-        sA += int(set_score[0]) if winner == players_elo.at[idxA, 'Player'] else int(set_score[1])
-        sB += int(set_score[1]) if winner == players_elo.at[idxA, 'Player'] else int(set_score[0])
+    if best_of < 5:
+        k *= 0.90
 
-    total_sets = sA + sB
+    # if outcome == "W/O":
+    #     k *= 0.50
+    
+    return k
 
-    sA = sA / total_sets
-    sB = sB / total_sets
+def delta_rating(winner_rating, loser_rating, level, tourney_name, round, best_of, outcome):
+    if outcome == "ABD":
+        return 0.0
+    delta = 1.0 / (1.0 + pow(10.0, (winner_rating - loser_rating) / RATING_SCALE))
+    return k_factor(level, tourney_name, round, best_of, outcome) * delta
 
-    rA_sets = players_elo.at[idxA, 'Sets Elo']
-    rB_sets = players_elo.at[idxB, 'Sets Elo']
+def new_rating(rating, delta): #GOOD
+    return rating + cap_delta_rating(delta * k_function(rating))
 
-    kA = 250 / ((players_elo.at[idxA, 'Sets Played'] + 5) ** 0.4)
-    kB = 250 / ((players_elo.at[idxB, 'Sets Played'] + 5) ** 0.4)
-    # k = 1.1 if level == "G" else 1
-    k=1
+def cap_delta_rating(delta): #GOOD
+    return copysign(min(abs(delta), DELTA_RATING_CAP), delta)
 
-    eA = 1 / (1 + 10 ** ((rB_sets - rA_sets) / 400))
-    eB = 1 / (1 + 10 ** ((rA_sets - rB_sets) / 400))
+def k_function(rating): #good
+    return 1.0 + K_FUNCTION_MULTIPLIER / (1.0 + pow(2.0, (rating - START_RATING) / K_FUNCTION_AMPLIFIER_GRADIENT))
 
-    rA_sets_new = rA_sets + (k * kA) * (sA - eA)
-    rB_sets_new = rB_sets + (k * kB) * (sB - eB)
+def elo_win_probability(elo_rating1, elo_rating2):
+    return 1.0 / (1.0 + pow(10.0, (elo_rating2 - elo_rating1) / RATING_SCALE))
 
-    players_elo.at[idxA, 'Sets Elo'] = rA_sets_new
-    players_elo.at[idxA, 'Sets Played'] += total_sets
+# Stolen and translated from https://github.com/mcekovic/tennis-crystal-ball/blob/master/tennis-stats/src/main/java/org/strangeforest/tcb/stats/model/elo/EloCalculator.java need to implement
+def delta_rating_surface(elo_surface_factors, winner_rating, loser_rating, match, type):
+    level = match.level
+    round = match.round
+    best_of = 5 if type.islower() else match.best_of
+    outcome = match.outcome
+    delta = delta_rating(winner_rating, loser_rating, level, round, best_of, outcome)
+    
+    if type in {"E", "R", "H", "C", "G", "P", "O", "I"}:
+        if type == "E":
+            return delta
+        if type == "R":
+            return RECENT_K_FACTOR * delta
+        return elo_surface_factors.surface_k_factor(type, match.end_date.year) * delta
+    
+    w_delta = delta
+    l_delta = delta_rating(loser_rating, winner_rating, level, round, best_of, outcome)
+    
+    if type == "s":
+        return SET_K_FACTOR * (w_delta * match.w_sets - l_delta * match.l_sets)
+    if type == "g":
+        return GAME_K_FACTOR * (w_delta * match.w_games - l_delta * match.l_games)
+    if type == "sg":
+        return SERVICE_GAME_K_FACTOR * (w_delta * match.w_sv_gms * return_to_serve_ratio(match.surface) - l_delta * match.l_rt_gms)
+    if type == "rg":
+        return RETURN_GAME_K_FACTOR * (w_delta * match.w_rt_gms - l_delta * match.l_sv_gms * return_to_serve_ratio(match.surface))
+    if type == "tb":
+        w_tbs = match.w_tbs
+        l_tbs = match.l_tbs
+        if l_tbs > w_tbs:
+            w_delta, l_delta = l_delta, w_delta
+        return TIE_BREAK_K_FACTOR * (w_delta * w_tbs - l_delta * l_tbs)
+    
+    raise ValueError("Invalid type")
 
-    players_elo.at[idxB, 'Sets Elo'] = rB_sets_new
-    players_elo.at[idxB, 'Sets Played'] += total_sets
+def return_to_serve_ratio(surface):
+    if surface is None:
+        return 0.297
+    surface_ratios = {
+        "H": 0.281, "C": 0.365, "G": 0.227, "P": 0.243
+    }
+    return surface_ratios.get(surface, None)
 
-        
 career_stats('20231231','m')
