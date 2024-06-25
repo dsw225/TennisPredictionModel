@@ -41,7 +41,8 @@ def career_stats(date, mw):
             (df['tourney_date'] < dateend) & 
             ~(
                 df.iloc[:, 23].str.contains('W') | 
-                df.iloc[:, 23].str.contains('R')
+                df.iloc[:, 23].str.contains('R') |
+                (df.iloc[:, 27:45].isnull().values.any(axis=1)) #For service and stuff etc
             )
         ]
         all_matches.append(df)
@@ -114,7 +115,7 @@ def update_elos(player_a, player_b, row):
     rA_new = new_rating(rA, delta)
     rB_new = new_rating(rB, -delta)
 
-    # Innacurate way to determine - need better method
+    # Innacurate way to determine surface elo - need better method
     surface = row['surface']
     if(surface=='Hard'):
         rA = players_elo.at[idxA, 'hard_elo_rating']
@@ -142,6 +143,33 @@ def update_elos(player_a, player_b, row):
         players_elo.at[idxB, 'grass_elo_rating'] = new_rating(rB, -delta)
 
 
+    # Other elos
+    rAset = players_elo.at[idxA, 'set_elo_rating']
+    rAgame = players_elo.at[idxA, 'game_elo_rating']
+    rAservice = players_elo.at[idxA, 'service_game_elo_rating']
+    rAreturn = players_elo.at[idxA, 'return_game_elo_rating']
+
+    rBset = players_elo.at[idxB, 'set_elo_rating']
+    rBgame = players_elo.at[idxB, 'game_elo_rating']
+    rBservice = players_elo.at[idxB, 'service_game_elo_rating']
+    rBreturn = players_elo.at[idxB, 'return_game_elo_rating']
+
+    # We know player A won
+    deltaSet = delta_rating_extra(rAset, rBset, row, 'N/A', 's')
+    deltaGame = delta_rating_extra(rAgame, rBgame, row, 'N/A', 'g')
+    deltaService = delta_rating_extra(rAservice, rBservice, row, 'N/A', 'sg')
+    deltaReturn = delta_rating_extra(rAreturn, rBreturn, row, 'N/A', 'rg')
+    
+    players_elo.at[idxA, 'set_elo_rating'] = new_rating(rAset, deltaSet)
+    players_elo.at[idxB, 'set_elo_rating'] = new_rating(rBset, -deltaSet)
+    players_elo.at[idxA, 'game_elo_rating'] = new_rating(rAgame, deltaGame)
+    players_elo.at[idxB, 'game_elo_rating'] = new_rating(rBgame, -deltaGame)
+    players_elo.at[idxA, 'service_game_elo_rating'] = new_rating(rAservice, deltaService)
+    players_elo.at[idxB, 'service_game_elo_rating'] = new_rating(rBservice, -deltaService)
+    players_elo.at[idxA, 'return_game_elo_rating'] = new_rating(rAreturn, deltaReturn)
+    players_elo.at[idxB, 'return_game_elo_rating'] = new_rating(rBreturn, -deltaReturn)
+
+    #remaining
     match_date = row['tourney_date']
     match_num = row['match_num']
     players_elo.at[idxA, 'elo_rating'] = rA_new
@@ -205,30 +233,52 @@ def elo_win_probability(elo_rating1, elo_rating2):
     return 1.0 / (1.0 + pow(10.0, (elo_rating2 - elo_rating1) / RATING_SCALE))
 
 # Stolen and translated from https://github.com/mcekovic/tennis-crystal-ball/blob/master/tennis-stats/src/main/java/org/strangeforest/tcb/stats/model/elo/EloCalculator.java need to implement
-def delta_rating_surface(elo_surface_factors, winner_rating, loser_rating, level, tourney_name, round, best_of, outcome):
-    delta = delta_rating(winner_rating, loser_rating, level, round, best_of, outcome)
-    
-    if type in {"E", "R", "H", "C", "G", "P", "O", "I"}:
-        if type == "E":
-            return delta
-        if type == "R":
-            return RECENT_K_FACTOR * delta
-        return elo_surface_factors.surface_k_factor(type, match.end_date.year) * delta
+def delta_rating_extra(winner_rating, loser_rating, row, outcome, type):
+    level = row['tourney_level']
+    name = row['tourney_name']
+    round = row['round']
+    best_of = int(row['best_of'])
+    surface = row['surface']
+
+    delta = delta_rating(winner_rating, loser_rating, level, name, round, best_of, outcome)
     
     w_delta = delta
-    l_delta = delta_rating(loser_rating, winner_rating, level, round, best_of, outcome)
-    
+    l_delta = delta_rating(loser_rating, winner_rating, level, name, round, best_of, outcome)
+    w_sv_gms = save_games(row['w_SvGms'], row['w_bpFaced'], row['w_bpSaved'])
+    l_sv_gms = save_games(row['l_SvGms'], row['l_bpFaced'], row['l_bpSaved'])
+    w_rt_gms = return_games(row['w_bpFaced'], row['w_bpSaved'])
+    l_rt_gms = return_games(row['l_bpFaced'], row['l_bpSaved'])
+    score = row['score']
+    w_games, l_games = 0, 0
+    w_sets, l_sets = 0, 0
+
+    sets = score.split()
+
+    for set_score in sets:
+        games = set_score.split('-')
+        
+        w_set = int(games[0].split('(')[0])
+        l_set = int(games[1].split('(')[0])
+        
+        w_games += w_set
+        l_games += l_set
+        
+        if w_set > l_set:
+            w_sets += 1
+        else:
+            l_sets += 1
+
     if type == "s":
-        return SET_K_FACTOR * (w_delta * match.w_sets - l_delta * match.l_sets)
+        return SET_K_FACTOR * (w_delta * w_sets - l_delta * l_sets)
     if type == "g":
-        return GAME_K_FACTOR * (w_delta * match.w_games - l_delta * match.l_games)
+        return GAME_K_FACTOR * (w_delta * w_games - l_delta * l_games)
     if type == "sg":
-        return SERVICE_GAME_K_FACTOR * (w_delta * match.w_sv_gms * return_to_serve_ratio(match.surface) - l_delta * match.l_rt_gms)
+        return SERVICE_GAME_K_FACTOR * (w_delta * w_sv_gms * return_to_serve_ratio(surface) - l_delta * l_rt_gms)
     if type == "rg":
-        return RETURN_GAME_K_FACTOR * (w_delta * match.w_rt_gms - l_delta * match.l_sv_gms * return_to_serve_ratio(match.surface))
+        return RETURN_GAME_K_FACTOR * (w_delta * w_rt_gms - l_delta * l_sv_gms * return_to_serve_ratio(surface))
     if type == "tb":
-        w_tbs = match.w_tbs
-        l_tbs = match.l_tbs
+        w_tbs = row['w_tbs'] #Doesnt exist need to fio
+        l_tbs = row['l_tbs']
         if l_tbs > w_tbs:
             w_delta, l_delta = l_delta, w_delta
         return TIE_BREAK_K_FACTOR * (w_delta * w_tbs - l_delta * l_tbs)
@@ -236,17 +286,15 @@ def delta_rating_surface(elo_surface_factors, winner_rating, loser_rating, level
     raise ValueError("Invalid type")
 
 def return_to_serve_ratio(surface):
-    if surface is None:
-        return 0.297
     surface_ratios = {
-        "H": 0.281, "C": 0.365, "G": 0.227, "P": 0.243
+        "Hard": 0.281, "Clay": 0.365, "Grass": 0.227, "P": 0.243
     }
-    return surface_ratios.get(surface, None)
+    return surface_ratios.get(surface, .297)
 
 def save_games(sv_gms, bp_faced, bp_saved):
-    return sv_gms - (bp_faced - bp_saved)
+    return int(sv_gms) - (int(bp_faced) - int(bp_saved))
 
 def return_games(bp_faced, bp_saved):
-    bp_faced-bp_saved
+    return int(bp_faced)- int(bp_saved)
 
 career_stats('20231231','m')
