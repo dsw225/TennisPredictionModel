@@ -204,48 +204,44 @@ def k_function(rating): #good
 def elo_win_probability(elo_rating1, elo_rating2):
     return 1.0 / (1.0 + pow(10.0, (elo_rating2 - elo_rating1) / RATING_SCALE))
 
-# # Stolen and translated from https://github.com/mcekovic/tennis-crystal-ball/blob/master/tennis-stats/src/main/java/org/strangeforest/tcb/stats/model/elo/EloCalculator.java need to implement
-# def delta_rating_surface(elo_surface_factors, winner_rating, loser_rating, match, type):
-#     level = match.level
-#     round = match.round
-#     best_of = 5 if type.islower() else match.best_of
-#     outcome = match.outcome
-#     delta = delta_rating(winner_rating, loser_rating, level, round, best_of, outcome)
+# Stolen and translated from https://github.com/mcekovic/tennis-crystal-ball/blob/master/tennis-stats/src/main/java/org/strangeforest/tcb/stats/model/elo/EloCalculator.java need to implement
+def delta_rating_surface(elo_surface_factors, winner_rating, loser_rating, level, tourney_name, round, best_of, outcome):
+    delta = delta_rating(winner_rating, loser_rating, level, round, best_of, outcome)
     
-#     if type in {"E", "R", "H", "C", "G", "P", "O", "I"}:
-#         if type == "E":
-#             return delta
-#         if type == "R":
-#             return RECENT_K_FACTOR * delta
-#         return elo_surface_factors.surface_k_factor(type, match.end_date.year) * delta
+    if type in {"E", "R", "H", "C", "G", "P", "O", "I"}:
+        if type == "E":
+            return delta
+        if type == "R":
+            return RECENT_K_FACTOR * delta
+        return elo_surface_factors.surface_k_factor(type, match.end_date.year) * delta
     
-#     w_delta = delta
-#     l_delta = delta_rating(loser_rating, winner_rating, level, round, best_of, outcome)
+    w_delta = delta
+    l_delta = delta_rating(loser_rating, winner_rating, level, round, best_of, outcome)
     
-#     if type == "s":
-#         return SET_K_FACTOR * (w_delta * match.w_sets - l_delta * match.l_sets)
-#     if type == "g":
-#         return GAME_K_FACTOR * (w_delta * match.w_games - l_delta * match.l_games)
-#     if type == "sg":
-#         return SERVICE_GAME_K_FACTOR * (w_delta * match.w_sv_gms * return_to_serve_ratio(match.surface) - l_delta * match.l_rt_gms)
-#     if type == "rg":
-#         return RETURN_GAME_K_FACTOR * (w_delta * match.w_rt_gms - l_delta * match.l_sv_gms * return_to_serve_ratio(match.surface))
-#     if type == "tb":
-#         w_tbs = match.w_tbs
-#         l_tbs = match.l_tbs
-#         if l_tbs > w_tbs:
-#             w_delta, l_delta = l_delta, w_delta
-#         return TIE_BREAK_K_FACTOR * (w_delta * w_tbs - l_delta * l_tbs)
+    if type == "s":
+        return SET_K_FACTOR * (w_delta * match.w_sets - l_delta * match.l_sets)
+    if type == "g":
+        return GAME_K_FACTOR * (w_delta * match.w_games - l_delta * match.l_games)
+    if type == "sg":
+        return SERVICE_GAME_K_FACTOR * (w_delta * match.w_sv_gms * return_to_serve_ratio(match.surface) - l_delta * match.l_rt_gms)
+    if type == "rg":
+        return RETURN_GAME_K_FACTOR * (w_delta * match.w_rt_gms - l_delta * match.l_sv_gms * return_to_serve_ratio(match.surface))
+    if type == "tb":
+        w_tbs = match.w_tbs
+        l_tbs = match.l_tbs
+        if l_tbs > w_tbs:
+            w_delta, l_delta = l_delta, w_delta
+        return TIE_BREAK_K_FACTOR * (w_delta * w_tbs - l_delta * l_tbs)
     
-#     raise ValueError("Invalid type")
+    raise ValueError("Invalid type")
 
-# def return_to_serve_ratio(surface):
-#     if surface is None:
-#         return 0.297
-#     surface_ratios = {
-#         "H": 0.281, "C": 0.365, "G": 0.227, "P": 0.243
-#     }
-#     return surface_ratios.get(surface, None)
+def return_to_serve_ratio(surface):
+    if surface is None:
+        return 0.297
+    surface_ratios = {
+        "H": 0.281, "C": 0.365, "G": 0.227, "P": 0.243
+    }
+    return surface_ratios.get(surface, None)
 
 def save_games(sv_gms, bp_faced, bp_saved):
     return sv_gms - (bp_faced - bp_saved)
