@@ -52,21 +52,29 @@ def career_stats(date, mw):
 
     players_to_elo = combined_names.drop_duplicates().tolist()
 
-    new_header = ['Player', 'Date', 'Number', 'Matches', 'Sets Played', 'Elo', 'Sets Elo', 'Lefty Elo', 'Righty Elo', 'Hard Elo', 'Clay Elo', 'Grass Elo']
+    new_header = ['player', 'last_date', 'match_number', 'matches_played', 'elo_rating', 'sets_elo_rating', 'lefty_elo_rating', 
+                  'righty_elo_rating', 'hard_elo_rating', 'clay_elo_rating', 'grass_elo_rating', 'outdoor_elo_rating', 'indoor_elo_rating', 
+                  'set_elo_rating', 'game_elo_rating', 'service_game_elo_rating', 'return_game_elo_rating', 'tie_break_elo_rating']
 
     data = {
-        'Player': players_to_elo,
-        'Date': [datetime(1900, 1, 1)] * len(players_to_elo),
-        'Number': [0] * len(players_to_elo),
-        'Matches': [0] * len(players_to_elo),
-        'Sets Played': [0] * len(players_to_elo),
-        'Elo': [START_RATING] * len(players_to_elo),
-        'Sets Elo': [START_RATING] * len(players_to_elo),
-        'Lefty Elo': [START_RATING] * len(players_to_elo),
-        'Righty Elo': [START_RATING] * len(players_to_elo),
-        'Hard Elo': [START_RATING] * len(players_to_elo),
-        'Clay Elo': [START_RATING] * len(players_to_elo),
-        'Grass Elo': [START_RATING] * len(players_to_elo)
+        'player': players_to_elo,
+        'last_date': [datetime(1900, 1, 1)] * len(players_to_elo),
+        'match_number': [0] * len(players_to_elo),
+        'matches_played': [0] * len(players_to_elo),
+        'elo_rating': [START_RATING] * len(players_to_elo),
+        'sets_elo_rating': [START_RATING] * len(players_to_elo),
+        'lefty_elo_rating': [START_RATING] * len(players_to_elo),
+        'righty_elo_rating': [START_RATING] * len(players_to_elo),
+        'hard_elo_rating': [START_RATING] * len(players_to_elo),
+        'clay_elo_rating': [START_RATING] * len(players_to_elo),
+        'grass_elo_rating': [START_RATING] * len(players_to_elo),
+        'outdoor_elo_rating': [START_RATING] * len(players_to_elo),
+        'indoor_elo_rating': [START_RATING] * len(players_to_elo),
+        'set_elo_rating': [START_RATING] * len(players_to_elo),
+        'game_elo_rating': [START_RATING] * len(players_to_elo),
+        'service_game_elo_rating': [START_RATING] * len(players_to_elo),
+        'return_game_elo_rating': [START_RATING] * len(players_to_elo),
+        'tie_break_elo_rating': [START_RATING] * len(players_to_elo),
     }
 
     global players_elo
@@ -77,8 +85,8 @@ def career_stats(date, mw):
             print(f"Processing Elos @ Match indexes: {index} - {index+1000}")
         try:
             update_elos(
-                players_elo.loc[players_elo['Player'] == row["winner_name"]], 
-                players_elo.loc[players_elo['Player'] == row["loser_name"]], 
+                players_elo.loc[players_elo['player'] == row["winner_name"]], 
+                players_elo.loc[players_elo['player'] == row["loser_name"]], 
                 row
             )
         except Exception as e:
@@ -97,8 +105,8 @@ def update_elos(player_a, player_b, row):
     idxA = player_a.index[0]
     idxB = player_b.index[0]
 
-    rA = players_elo.at[idxA, 'Elo']
-    rB = players_elo.at[idxB, 'Elo']
+    rA = players_elo.at[idxA, 'elo_rating']
+    rB = players_elo.at[idxB, 'elo_rating']
 
     # We know player A won
     delta = delta_rating(rA, rB, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A")
@@ -106,17 +114,45 @@ def update_elos(player_a, player_b, row):
     rA_new = new_rating(rA, delta)
     rB_new = new_rating(rB, -delta)
 
+    # Innacurate way to determine - need better method
+    surface = row['surface']
+    if(surface=='Hard'):
+        rA = players_elo.at[idxA, 'hard_elo_rating']
+        rB = players_elo.at[idxB, 'hard_elo_rating']
+
+        delta = delta_rating(rA, rB, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A")
+
+        players_elo.at[idxA, 'hard_elo_rating'] = new_rating(rA, delta)
+        players_elo.at[idxB, 'hard_elo_rating'] = new_rating(rB, -delta)
+    elif(surface=='Clay'):
+        rA = players_elo.at[idxA, 'clay_elo_rating']
+        rB = players_elo.at[idxB, 'clay_elo_rating']
+
+        delta = delta_rating(rA, rB, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A")
+
+        players_elo.at[idxA, 'clay_elo_rating'] = new_rating(rA, delta)
+        players_elo.at[idxB, 'clay_elo_rating'] = new_rating(rB, -delta)
+    elif(surface=='Grass'):
+        rA = players_elo.at[idxA, 'grass_elo_rating']
+        rB = players_elo.at[idxB, 'grass_elo_rating']
+
+        delta = delta_rating(rA, rB, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A")
+
+        players_elo.at[idxA, 'grass_elo_rating'] = new_rating(rA, delta)
+        players_elo.at[idxB, 'grass_elo_rating'] = new_rating(rB, -delta)
+
+
     match_date = row['tourney_date']
     match_num = row['match_num']
-    players_elo.at[idxA, 'Elo'] = rA_new
-    players_elo.at[idxA, 'Date'] = match_date
-    players_elo.at[idxA, 'Number'] = match_num
-    players_elo.at[idxA, 'Matches'] += 1
+    players_elo.at[idxA, 'elo_rating'] = rA_new
+    players_elo.at[idxA, 'last_date'] = match_date
+    players_elo.at[idxA, 'match_number'] = match_num
+    players_elo.at[idxA, 'matches_played'] += 1
 
-    players_elo.at[idxB, 'Elo'] = rB_new
-    players_elo.at[idxB, 'Date'] = match_date
-    players_elo.at[idxB, 'Number'] = match_num
-    players_elo.at[idxB, 'Matches'] += 1
+    players_elo.at[idxB, 'elo_rating'] = rB_new
+    players_elo.at[idxB, 'last_date'] = match_date
+    players_elo.at[idxB, 'match_number'] = match_num
+    players_elo.at[idxB, 'matches_played'] += 1
 
 
 def k_factor(level, tourney_name, round, best_of, outcome):
@@ -168,47 +204,53 @@ def k_function(rating): #good
 def elo_win_probability(elo_rating1, elo_rating2):
     return 1.0 / (1.0 + pow(10.0, (elo_rating2 - elo_rating1) / RATING_SCALE))
 
-# Stolen and translated from https://github.com/mcekovic/tennis-crystal-ball/blob/master/tennis-stats/src/main/java/org/strangeforest/tcb/stats/model/elo/EloCalculator.java need to implement
-def delta_rating_surface(elo_surface_factors, winner_rating, loser_rating, match, type):
-    level = match.level
-    round = match.round
-    best_of = 5 if type.islower() else match.best_of
-    outcome = match.outcome
-    delta = delta_rating(winner_rating, loser_rating, level, round, best_of, outcome)
+# # Stolen and translated from https://github.com/mcekovic/tennis-crystal-ball/blob/master/tennis-stats/src/main/java/org/strangeforest/tcb/stats/model/elo/EloCalculator.java need to implement
+# def delta_rating_surface(elo_surface_factors, winner_rating, loser_rating, match, type):
+#     level = match.level
+#     round = match.round
+#     best_of = 5 if type.islower() else match.best_of
+#     outcome = match.outcome
+#     delta = delta_rating(winner_rating, loser_rating, level, round, best_of, outcome)
     
-    if type in {"E", "R", "H", "C", "G", "P", "O", "I"}:
-        if type == "E":
-            return delta
-        if type == "R":
-            return RECENT_K_FACTOR * delta
-        return elo_surface_factors.surface_k_factor(type, match.end_date.year) * delta
+#     if type in {"E", "R", "H", "C", "G", "P", "O", "I"}:
+#         if type == "E":
+#             return delta
+#         if type == "R":
+#             return RECENT_K_FACTOR * delta
+#         return elo_surface_factors.surface_k_factor(type, match.end_date.year) * delta
     
-    w_delta = delta
-    l_delta = delta_rating(loser_rating, winner_rating, level, round, best_of, outcome)
+#     w_delta = delta
+#     l_delta = delta_rating(loser_rating, winner_rating, level, round, best_of, outcome)
     
-    if type == "s":
-        return SET_K_FACTOR * (w_delta * match.w_sets - l_delta * match.l_sets)
-    if type == "g":
-        return GAME_K_FACTOR * (w_delta * match.w_games - l_delta * match.l_games)
-    if type == "sg":
-        return SERVICE_GAME_K_FACTOR * (w_delta * match.w_sv_gms * return_to_serve_ratio(match.surface) - l_delta * match.l_rt_gms)
-    if type == "rg":
-        return RETURN_GAME_K_FACTOR * (w_delta * match.w_rt_gms - l_delta * match.l_sv_gms * return_to_serve_ratio(match.surface))
-    if type == "tb":
-        w_tbs = match.w_tbs
-        l_tbs = match.l_tbs
-        if l_tbs > w_tbs:
-            w_delta, l_delta = l_delta, w_delta
-        return TIE_BREAK_K_FACTOR * (w_delta * w_tbs - l_delta * l_tbs)
+#     if type == "s":
+#         return SET_K_FACTOR * (w_delta * match.w_sets - l_delta * match.l_sets)
+#     if type == "g":
+#         return GAME_K_FACTOR * (w_delta * match.w_games - l_delta * match.l_games)
+#     if type == "sg":
+#         return SERVICE_GAME_K_FACTOR * (w_delta * match.w_sv_gms * return_to_serve_ratio(match.surface) - l_delta * match.l_rt_gms)
+#     if type == "rg":
+#         return RETURN_GAME_K_FACTOR * (w_delta * match.w_rt_gms - l_delta * match.l_sv_gms * return_to_serve_ratio(match.surface))
+#     if type == "tb":
+#         w_tbs = match.w_tbs
+#         l_tbs = match.l_tbs
+#         if l_tbs > w_tbs:
+#             w_delta, l_delta = l_delta, w_delta
+#         return TIE_BREAK_K_FACTOR * (w_delta * w_tbs - l_delta * l_tbs)
     
-    raise ValueError("Invalid type")
+#     raise ValueError("Invalid type")
 
-def return_to_serve_ratio(surface):
-    if surface is None:
-        return 0.297
-    surface_ratios = {
-        "H": 0.281, "C": 0.365, "G": 0.227, "P": 0.243
-    }
-    return surface_ratios.get(surface, None)
+# def return_to_serve_ratio(surface):
+#     if surface is None:
+#         return 0.297
+#     surface_ratios = {
+#         "H": 0.281, "C": 0.365, "G": 0.227, "P": 0.243
+#     }
+#     return surface_ratios.get(surface, None)
+
+def save_games(sv_gms, bp_faced, bp_saved):
+    return sv_gms - (bp_faced - bp_saved)
+
+def return_games(bp_faced, bp_saved):
+    bp_faced-bp_saved
 
 career_stats('20231231','m')
