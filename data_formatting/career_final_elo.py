@@ -9,9 +9,9 @@ K_FUNCTION_AMPLIFIER = 10.0
 K_FUNCTION_AMPLIFIER_GRADIENT = 63.0
 K_FUNCTION_MULTIPLIER = 2.0 * (K_FUNCTION_AMPLIFIER - 1.0)
 DELTA_RATING_CAP = 200.0
-# Added to normalize elos - make more standard ratings - needs adjustment
+# Added to normalize elos - make more standard ratings - needs adjustment .409596
 SERVE_RETURN_K_FACTOR = 4.2
-TB_K_FACTOR = 1
+TB_K_FACTOR = 3.275
 
 def career_stats(date, mw):
     dateend = datetime.strptime(date, "%Y%m%d")
@@ -274,10 +274,6 @@ def sets_games_elo(player_a, player_b, row, w_sets, l_sets, w_games, l_games):
 
     players_elo.at[idxA, 'game_elo_rating'] = new_rating(rAgame, deltaGameNew, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A")
     players_elo.at[idxB, 'game_elo_rating'] = new_rating(rBgame, -deltaGameNew, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A")
-
-    
-
-    
 
 def tb_elo(player_a, player_b, row, tie_breaks_won_winner, tie_breaks_won_loser, tie_breaks_played, deciding_set):
     idxA = player_a.index[0]
