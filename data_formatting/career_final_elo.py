@@ -290,7 +290,7 @@ def tb_elo(player_a, player_b, row, tie_breaks_won_winner, tie_breaks_won_loser,
     player_b_pressure_rating = pressure_rating(row['l_bpFaced'], row['l_bpSaved'], row['w_bpFaced'], row['w_bpSaved'], tie_breaks_won_loser, tie_breaks_played, deciding_set, False)
 
     delta = delta_rating(rAtb, rBtb, "N/A")
-    player_a_service = TB_K_FACTOR * ((player_a_pressure_rating) / (player_a_pressure_rating + player_b_pressure_rating) - (1 - delta))
+    player_a_service = TB_K_FACTOR * ((player_a_pressure_rating) / (player_a_pressure_rating + player_b_pressure_rating) - (1 - delta)) if (player_a_pressure_rating + player_b_pressure_rating) > 0 else TB_K_FACTOR * (1 - delta)
 
     players_elo.at[idxA, 'tie_break_elo_rating'] = new_rating(rAtb, player_a_service, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A")
     players_elo.at[idxB, 'tie_break_elo_rating'] = new_rating(rBtb, -player_a_service, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A")
