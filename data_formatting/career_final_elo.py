@@ -11,6 +11,7 @@ K_FUNCTION_MULTIPLIER = 2.0 * (K_FUNCTION_AMPLIFIER - 1.0)
 DELTA_RATING_CAP = 200.0
 # Added to normalize elos - make more standard ratings - needs adjustment
 SERVE_RETURN_K_FACTOR = 4.2
+TB_K_FACTOR = 1
 
 def career_stats(date, mw):
     dateend = datetime.strptime(date, "%Y%m%d")
@@ -48,7 +49,7 @@ def career_stats(date, mw):
 
     players_to_elo = combined_names.drop_duplicates().tolist()
 
-    new_header = ['player', 'last_date', 'match_number', 'matches_played', 'elo_rating', 'sets_elo_rating', 'lefty_elo_rating', 
+    new_header = ['player', 'last_date', 'match_number', 'matches_played', 'elo_rating', 'lefty_elo_rating', 
                   'righty_elo_rating', 'hard_elo_rating', 'clay_elo_rating', 'grass_elo_rating', 'outdoor_elo_rating', 'indoor_elo_rating', 
                   'set_elo_rating', 'game_elo_rating', 'service_game_elo_rating', 'return_game_elo_rating', 'tie_break_elo_rating']
 
@@ -58,7 +59,6 @@ def career_stats(date, mw):
         'match_number': [0] * len(players_to_elo),
         'matches_played': [0] * len(players_to_elo),
         'elo_rating': [START_RATING] * len(players_to_elo),
-        'sets_elo_rating': [START_RATING] * len(players_to_elo),
         'lefty_elo_rating': [START_RATING] * len(players_to_elo),
         'righty_elo_rating': [START_RATING] * len(players_to_elo),
         'hard_elo_rating': [START_RATING] * len(players_to_elo),
@@ -96,52 +96,59 @@ def update_elos(player_a, player_b, row):
     if player_a.empty or player_b.empty:
         print("Error: One of the players not found in players_elo DataFrame")
         return
-
-    idxA = player_a.index[0]
-    idxB = player_b.index[0]
-
-    rA = players_elo.at[idxA, 'elo_rating']
-    rB = players_elo.at[idxB, 'elo_rating']
-
-    delta = delta_rating(rA, rB, "N/A")
     
+    score = row['score']
+    sets = score.split()
+
+    w_games, l_games = 0, 0
+    w_sets, l_sets = 0, 0
+    tie_breaks_won_winner, tie_breaks_won_loser = 0, 0
+
+    for set_score in sets:
+        if '(' in set_score:
+            # There was a tie-break in this set
+            normal_score, tie_break_score = set_score.split('(')
+            tie_break_score = tie_break_score.rstrip(')')
+            
+            # Parse normal score
+            w_set, l_set = map(int, normal_score.split('-'))
+            
+            # Determine tie-break winner
+            if w_set > l_set:
+                w_sets += 1
+                tie_breaks_won_winner += 1
+            else:
+                tie_breaks_won_loser += 1
+                l_sets += 1
+        else:
+            # Parse normal score
+            w_set, l_set = map(int, set_score.split('-'))
+            if w_set > l_set:
+                w_sets += 1
+            else:
+                l_sets += 1
+
+        w_games += w_set
+        l_games += l_set
+        
+    deciding_set = True if len(sets) == 3 and row['best_of'] == 3 or len(sets) == 5 and row['best_of'] == 5 else False
+
+    tie_breaks_played = tie_breaks_won_winner + tie_breaks_won_loser
+
     # We know player A won
-    rA_new = new_rating(rA, delta, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A")
-    rB_new = new_rating(rB, -delta, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A")
 
     # Current surface_elo method -- Ok?
     surface_elos(player_a, player_b, row)
 
+    sets_games_elo(player_a, player_b, row, w_sets, l_sets, w_games, l_games)
+
+    tb_elo(player_a, player_b, row, tie_breaks_won_winner, tie_breaks_won_loser, tie_breaks_played, deciding_set)
+
     return_serve_elo(player_a, player_b, row)
 
-    # We know player A won
-    rAset = players_elo.at[idxA, 'set_elo_rating']
-    rBset = players_elo.at[idxB, 'set_elo_rating']
+    primary_elo(player_a, player_b, row)
 
-    rAgame = players_elo.at[idxA, 'game_elo_rating']
-    rBgame = players_elo.at[idxB, 'game_elo_rating']
     
-    deltaSet = delta_rating_sg(rAset, rBset, row, 'N/A', 's')
-    deltaGame = delta_rating_sg(rAgame, rBgame, row, 'N/A', 'g')
-    
-    players_elo.at[idxA, 'set_elo_rating'] = new_rating(rAset, deltaSet, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A")
-    players_elo.at[idxB, 'set_elo_rating'] = new_rating(rBset, -deltaSet, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A")
-    players_elo.at[idxA, 'game_elo_rating'] = new_rating(rAgame, deltaGame, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A")
-    players_elo.at[idxB, 'game_elo_rating'] = new_rating(rBgame, -deltaGame, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A")
-
-    #remaining
-    match_date = row['tourney_date']
-    match_num = row['match_num']
-    players_elo.at[idxA, 'elo_rating'] = rA_new
-    players_elo.at[idxA, 'last_date'] = match_date
-    players_elo.at[idxA, 'match_number'] = match_num
-    players_elo.at[idxA, 'matches_played'] += 1
-
-    players_elo.at[idxB, 'elo_rating'] = rB_new
-    players_elo.at[idxB, 'last_date'] = match_date
-    players_elo.at[idxB, 'match_number'] = match_num
-    players_elo.at[idxB, 'matches_played'] += 1
-
 def k_factor(level, tourney_name, round, best_of, outcome):
     k = K_FACTOR
     if "G" == level:
@@ -191,6 +198,30 @@ def k_function(rating): #GOOD
 def elo_win_probability(elo_rating1, elo_rating2):
     return 1.0 / (1.0 + pow(10.0, (elo_rating2 - elo_rating1) / RATING_SCALE))
 
+def primary_elo(player_a, player_b, row):
+    idxA = player_a.index[0]
+    idxB = player_b.index[0]
+
+    rA = players_elo.at[idxA, 'elo_rating']
+    rB = players_elo.at[idxB, 'elo_rating']
+
+    delta = delta_rating(rA, rB, "N/A")
+
+    rA_new = new_rating(rA, delta, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A")
+    rB_new = new_rating(rB, -delta, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A")
+
+    match_date = row['tourney_date']
+    match_num = row['match_num']
+    players_elo.at[idxA, 'elo_rating'] = rA_new
+    players_elo.at[idxA, 'last_date'] = match_date
+    players_elo.at[idxA, 'match_number'] = match_num
+    players_elo.at[idxA, 'matches_played'] += 1
+
+    players_elo.at[idxB, 'elo_rating'] = rB_new
+    players_elo.at[idxB, 'last_date'] = match_date
+    players_elo.at[idxB, 'match_number'] = match_num
+    players_elo.at[idxB, 'matches_played'] += 1
+
 def surface_elos(player_a, player_b, row):
     idxA = player_a.index[0]
     idxB = player_b.index[0]
@@ -222,44 +253,52 @@ def surface_elos(player_a, player_b, row):
         players_elo.at[idxB, 'grass_elo_rating'] = new_rating(rB, -delta, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A")
 
 # Stolen and changed from https://github.com/mcekovic/tennis-crystal-ball/blob/master/tennis-stats/src/main/java/org/strangeforest/tcb/stats/model/elo/EloCalculator.java need to implement
-def delta_rating_sg(winner_rating, loser_rating, row, outcome, type):
-    delta = delta_rating(winner_rating, loser_rating, outcome)
+def sets_games_elo(player_a, player_b, row, w_sets, l_sets, w_games, l_games):
+    idxA = player_a.index[0]
+    idxB = player_b.index[0]
 
-    score = row['score']
-    w_games, l_games = 0, 0
-    w_sets, l_sets = 0, 0
+    rAset = players_elo.at[idxA, 'set_elo_rating']
+    rBset = players_elo.at[idxB, 'set_elo_rating']
 
-    sets = score.split()
+    rAgame = players_elo.at[idxA, 'game_elo_rating']
+    rBgame = players_elo.at[idxB, 'game_elo_rating']
 
-    for set_score in sets:
-        games = set_score.split('-')
-        
-        w_set = int(games[0].split('(')[0])
-        l_set = int(games[1].split('(')[0])
-        
-        w_games += w_set
-        l_games += l_set
-        
-        if w_set > l_set:
-            w_sets += 1
-        else:
-            l_sets += 1
+    deltaSet = delta_rating(rAset, rBset, 'N/A')
+    deltaGame = delta_rating(rAgame, rBgame, 'N/A')
 
-    if type == "s":
-        return  delta * ((w_sets -  l_sets)/(w_sets + l_sets))
-    if type == "g":
-        return delta * ((w_games - l_games)/(w_games + l_games))
+    deltaSetNew = deltaSet * ((w_sets -  l_sets)/(w_sets + l_sets))
+    deltaGameNew = deltaGame * ((w_games - l_games)/(w_games + l_games))
+
+    players_elo.at[idxA, 'set_elo_rating'] = new_rating(rAset, deltaSetNew, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A")
+    players_elo.at[idxB, 'set_elo_rating'] = new_rating(rBset, -deltaSetNew, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A")
+
+    players_elo.at[idxA, 'game_elo_rating'] = new_rating(rAgame, deltaGameNew, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A")
+    players_elo.at[idxB, 'game_elo_rating'] = new_rating(rBgame, -deltaGameNew, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A")
+
     
-    raise ValueError("Invalid type")
 
-avg_service, avg_return, count= 0, 0, 0, 
+    
+
+def tb_elo(player_a, player_b, row, tie_breaks_won_winner, tie_breaks_won_loser, tie_breaks_played, deciding_set):
+    idxA = player_a.index[0]
+    idxB = player_b.index[0]
+
+    rAtb = players_elo.at[idxA, 'tie_break_elo_rating']
+    rBtb = players_elo.at[idxB, 'tie_break_elo_rating']
+
+    player_a_pressure_rating = pressure_rating(row['w_bpFaced'], row['w_bpSaved'], row['l_bpFaced'], row['l_bpSaved'], tie_breaks_won_winner, tie_breaks_played, deciding_set, True)
+    player_b_pressure_rating = pressure_rating(row['l_bpFaced'], row['l_bpSaved'], row['w_bpFaced'], row['w_bpSaved'], tie_breaks_won_loser, tie_breaks_played, deciding_set, False)
+
+    delta = delta_rating(rAtb, rBtb, "N/A")
+    player_a_service = TB_K_FACTOR * ((player_a_pressure_rating) / (player_a_pressure_rating + player_b_pressure_rating) - (1 - delta))
+
+    players_elo.at[idxA, 'tie_break_elo_rating'] = new_rating(rAtb, player_a_service, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A")
+    players_elo.at[idxB, 'tie_break_elo_rating'] = new_rating(rBtb, -player_a_service, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A")
 
 def return_serve_elo(player_a, player_b, row):
     idxA = player_a.index[0]
     idxB = player_b.index[0]
     surface = row['surface']
-
-    global avg_service, avg_return, count
 
     rAservice = players_elo.at[idxA, 'service_game_elo_rating']
     rBservice = players_elo.at[idxB, 'service_game_elo_rating']
@@ -275,22 +314,14 @@ def return_serve_elo(player_a, player_b, row):
 
     delta = delta_rating(rAservice, rBreturn, "N/A")
     player_a_service = SERVE_RETURN_K_FACTOR * ((playerA_serveRating) / (playerA_serveRating + playerB_returnRating * return_to_serve_ratio(surface)) - (1 - delta))
-    player_b_return = SERVE_RETURN_K_FACTOR * ((playerB_returnRating * return_to_serve_ratio(surface)) / (playerA_serveRating + playerB_returnRating * return_to_serve_ratio(surface)) - delta)
     delta = delta_rating(rBservice, rAreturn, "N/A")
     player_b_service =  SERVE_RETURN_K_FACTOR * ((playerB_serveRating) / (playerB_serveRating + playerA_returnRating * return_to_serve_ratio(surface)) - (1 - delta))
-    player_a_return = SERVE_RETURN_K_FACTOR * ((playerA_returnRating * return_to_serve_ratio(surface)) / (playerB_serveRating + playerA_returnRating * return_to_serve_ratio(surface)) - delta)
-
-    count += 2
-    avg_service += abs(player_a_service) + abs(player_b_service)
-    avg_return += abs(player_b_return) + abs(player_a_return)
-
-    print('Total Avg_Service Delta: ' + str(avg_service/count) + "   Total Avg_Return Delta: " +  str(avg_return/count))
 
     players_elo.at[idxA, 'service_game_elo_rating'] = new_rating(rAservice, player_a_service, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A")
     players_elo.at[idxB, 'service_game_elo_rating'] = new_rating(rBservice, player_b_service, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A")
 
-    players_elo.at[idxA, 'return_game_elo_rating'] = new_rating(rAreturn, player_a_return, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A")
-    players_elo.at[idxB, 'return_game_elo_rating'] = new_rating(rBreturn, player_b_return, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A")
+    players_elo.at[idxA, 'return_game_elo_rating'] = new_rating(rAreturn, -player_b_service, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A")
+    players_elo.at[idxB, 'return_game_elo_rating'] = new_rating(rBreturn, -player_a_service, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A")
 
 def return_to_serve_ratio(surface):
     surface_ratios = {
@@ -322,12 +353,19 @@ def return_rating(rt_pt, firstServeReturn, firstServeReturnWon, secondServeRetur
     return_games_won_pct = (bp_faced_oppo - bp_saved_oppo)/ rt_gms * 100 if rt_gms > 0 else 19.5
     return firstServeReturnWon_pct + secondServeReturnWon_pct + bp_converted_pct + return_games_won_pct
 
-# # NEED MORE DATA
+# # Ultimate Tennis Tie Break Elo = wDelta * wTBs - lDelta * lTBs
 # # ATP Serve Rating Official = Break Points Converted % + Break Points Saved % + Tie Breaks Won % + Deciding Sets %
-def pressure_rating(bp_faced, bp_saved, bp_faced_oppo, bp_saved_oppo, sv_gms):
-    bp_saved_pct = bp_saved/bp_faced * 100
-    bp_converted_pct = (bp_faced_oppo - bp_saved_oppo)/bp_faced_oppo * 100
-    return bp_saved_pct + bp_converted_pct
+def pressure_rating(bp_faced, bp_saved, bp_faced_oppo, bp_saved_oppo, tb_won, tb_total, deciding_set, won):
+    bp_saved_pct = bp_saved/bp_faced * 100 if bp_faced > 0 else 62
+    bp_converted_pct = (bp_faced_oppo - bp_saved_oppo)/bp_faced_oppo * 100 if bp_faced_oppo > 0 else 38
+    tb_won_pct = tb_won/tb_total * 100 if tb_total > 0 else 50
+    if deciding_set and won:
+        deciding_sets_won_winner_pct = 100
+    elif deciding_set:
+        deciding_sets_won_winner_pct = 0
+    else:
+        deciding_sets_won_winner_pct = 50
+    return bp_saved_pct + bp_converted_pct + tb_won_pct + deciding_sets_won_winner_pct
 
 
 career_stats('20231231','m')
