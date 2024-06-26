@@ -3,12 +3,14 @@ from datetime import datetime
 from math import pow, copysign
 
 START_RATING = 1500
-RATING_SCALE = 400.0 # https://en.wikipedia.org/wiki/Elo_rating_system#Suggested_modification Try for a little
+RATING_SCALE = 480.0 # https://en.wikipedia.org/wiki/Elo_rating_system#Suggested_modification https://en.chessbase.com/post/the-elo-rating-system-correcting-the-expectancy-tables
 K_FACTOR = 32.0
 K_FUNCTION_AMPLIFIER = 10.0
 K_FUNCTION_AMPLIFIER_GRADIENT = 63.0
 K_FUNCTION_MULTIPLIER = 2.0 * (K_FUNCTION_AMPLIFIER - 1.0)
 DELTA_RATING_CAP = 200.0
+# Added to normalize elos - make more standard ratings - needs adjustment
+SERVE_RETURN_K_FACTOR = 4.2
 
 def career_stats(date, mw):
     dateend = datetime.strptime(date, "%Y%m%d")
@@ -86,10 +88,9 @@ def career_stats(date, mw):
         except Exception as e:
             print(f"An error occurred: {e}")
             pass
-    players_elo = players_elo.sort_values(by='set_elo_rating')
+    players_elo = players_elo.sort_values(by='elo_rating', ascending=False)
     players_elo.to_csv('csvs/Generated/' + output_path, index=False)
     print("Done")
-
 
 def update_elos(player_a, player_b, row):
     if player_a.empty or player_b.empty:
@@ -140,7 +141,6 @@ def update_elos(player_a, player_b, row):
     players_elo.at[idxB, 'last_date'] = match_date
     players_elo.at[idxB, 'match_number'] = match_num
     players_elo.at[idxB, 'matches_played'] += 1
-
 
 def k_factor(level, tourney_name, round, best_of, outcome):
     k = K_FACTOR
@@ -274,28 +274,11 @@ def return_serve_elo(player_a, player_b, row):
     playerB_returnRating = return_rating(row['w_svpt'], row['w_1stIn'], row['w_1stWon'], row['w_2ndWon'], row['w_bpFaced'], row['w_bpSaved'], row['w_SvGms'])
 
     delta = delta_rating(rAservice, rBreturn, "N/A")
-    player_a_service = ((playerA_serveRating) / (playerA_serveRating + playerB_returnRating * return_to_serve_ratio(surface)) - (1 - delta))
-    player_b_return = ((playerB_returnRating * return_to_serve_ratio(surface)) / (playerA_serveRating + playerB_returnRating * return_to_serve_ratio(surface)) - delta)
+    player_a_service = SERVE_RETURN_K_FACTOR * ((playerA_serveRating) / (playerA_serveRating + playerB_returnRating * return_to_serve_ratio(surface)) - (1 - delta))
+    player_b_return = SERVE_RETURN_K_FACTOR * ((playerB_returnRating * return_to_serve_ratio(surface)) / (playerA_serveRating + playerB_returnRating * return_to_serve_ratio(surface)) - delta)
     delta = delta_rating(rBservice, rAreturn, "N/A")
-    player_b_service =  ((playerB_serveRating) / (playerB_serveRating + playerA_returnRating * return_to_serve_ratio(surface)) - (1 - delta))
-    player_a_return = ((playerA_returnRating * return_to_serve_ratio(surface)) / (playerB_serveRating + playerA_returnRating * return_to_serve_ratio(surface)) - delta)
-
-    # print('Serve A: ' + str(player_a_service) + ' Serve B: ' + str(player_b_service))
-    # print('Return A: ' + str(player_a_return) + ' Return B: ' + str(player_b_return))
-    # print('First Delta: ' + str(delta) + ' Second Delta: ' + str(delta))
-
-    # if(surface == 'Hard'):
-    #     count_hard += 2
-    #     avg_serve_hard += playerA_serveRating + playerB_serveRating
-    #     avg_return_hard += playerA_returnRating + playerB_returnRating
-    # elif(surface == 'Clay'):
-    #     count_clay += 2
-    #     avg_serve_clay += playerA_serveRating + playerB_serveRating
-    #     avg_return_clay += playerA_returnRating + playerB_returnRating
-    # elif(surface == 'Grass'):
-    #     count_grass += 2
-    #     avg_serve_grass += playerA_serveRating + playerB_serveRating
-    #     avg_return_grass += playerA_returnRating + playerB_returnRating
+    player_b_service =  SERVE_RETURN_K_FACTOR * ((playerB_serveRating) / (playerB_serveRating + playerA_returnRating * return_to_serve_ratio(surface)) - (1 - delta))
+    player_a_return = SERVE_RETURN_K_FACTOR * ((playerA_returnRating * return_to_serve_ratio(surface)) / (playerB_serveRating + playerA_returnRating * return_to_serve_ratio(surface)) - delta)
 
     count += 2
     avg_service += abs(player_a_service) + abs(player_b_service)
@@ -309,13 +292,11 @@ def return_serve_elo(player_a, player_b, row):
     players_elo.at[idxA, 'return_game_elo_rating'] = new_rating(rAreturn, player_a_return, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A")
     players_elo.at[idxB, 'return_game_elo_rating'] = new_rating(rBreturn, player_b_return, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A")
 
-
 def return_to_serve_ratio(surface):
     surface_ratios = {
         "Hard": 1.871, "Clay": 1.654, "Grass": 2.044
     }
     return surface_ratios.get(surface, 1.817)
-
 
 # # Ultimate Tennis Serve Rating = Ace % - Double Faults % + 1st Serve % + 1st Serve Points Won % + 2nd Serve Points Won % + Break Points Saved % + Service Games Won %
 # # ATP Serve Rating Official = Aces - Double Faults + 1st Serve % + 1st Serve Points Won % + 2nd Serve Points Won % + Service Games Won %
@@ -349,4 +330,4 @@ def pressure_rating(bp_faced, bp_saved, bp_faced_oppo, bp_saved_oppo, sv_gms):
     return bp_saved_pct + bp_converted_pct
 
 
-career_stats('20150520','m')
+career_stats('20231231','m')
