@@ -1,18 +1,25 @@
-import requests # Broken for sofascore
 import http.client
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 
+conn = http.client.HTTPSConnection("api.sofascore.com")
+
+## 3: ATP Games 6: WTA Games 72: Challenger Mens 871: Challenger Womens 785: ITF Mens 213: ITF Women
 def get_stats(mw, date):
     if mw == 'm':
         prefix = '3'
     elif mw == 'w':
         prefix = '6'
+    elif mw == 'mc':
+        prefix = '72'
+    elif mw == 'wc':
+        prefix = '871'
+    elif mw == 'mi':
+        prefix = '785'
+    elif mw == 'wi':
+        prefix = '213'
     else:
         prefix = ''
-
-    global conn
-    conn = http.client.HTTPSConnection("api.sofascore.com")
     
     url = f"/api/v1/category/{prefix}/scheduled-events/{date.strftime('%Y-%m-%d')}" if prefix != '' else f"api.sofascore.com/api/v1/sport/tennis/scheduled-events/{date.strftime('%Y-%m-%d')}"
 
@@ -47,9 +54,6 @@ def extract_stats(match):
 
     match_stats_data = json.loads(data.decode("utf-8"))
 
-    # Adding logs to check the structure of the response
-    # print("Match Stats Data:", match_stats_data)
-
     # Handling potential key errors and accessing nested data safely
     try:
         match_stats_all = match_stats_data["statistics"][0]["groups"]
@@ -59,6 +63,7 @@ def extract_stats(match):
 
     elapsed_time = datetime.fromtimestamp(match["changes"]["changeTimestamp"]) - datetime.fromtimestamp(match["time"]["currentPeriodStartTimestamp"])
     minutes = int(elapsed_time.total_seconds() // 60)
+    print(f"Minutes: {minutes}")
     round = match["roundInfo"]["slug"]
     best_of = 3 #match["defaultPeriodCount"] temp fix
 
@@ -95,4 +100,4 @@ def extract_stats(match):
 
     return stats
 
-get_stats('m', datetime.now())
+get_stats('m', datetime.now() - timedelta(days=5))
