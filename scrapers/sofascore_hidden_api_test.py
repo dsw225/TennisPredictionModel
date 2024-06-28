@@ -21,7 +21,7 @@ def get_stats(mw, date):
     else:
         prefix = ''
     
-    url = f"/api/v1/category/{prefix}/scheduled-events/{date.strftime('%Y-%m-%d')}" if prefix != '' else f"api.sofascore.com/api/v1/sport/tennis/scheduled-events/{date.strftime('%Y-%m-%d')}"
+    url = f"/api/v1/category/{prefix}/scheduled-events/{date.strftime('%Y-%m-%d')}" if prefix != '' else f"/api/v1/sport/tennis/scheduled-events/{date.strftime('%Y-%m-%d')}"
 
     payload = ''
     headers = {}
