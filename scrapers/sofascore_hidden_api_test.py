@@ -3,8 +3,6 @@ import json
 from datetime import datetime, timedelta
 import time
 import random
-import requests
-from urllib3.util import SKIP_HEADER
 
 # Function to read proxies from a file
 # def read_proxies(file_path):
@@ -40,21 +38,7 @@ from urllib3.util import SKIP_HEADER
 #         print(f"Error with proxy {proxy}: {e}")
 #         return {}
 
-# conn = http.client.HTTPSConnection("api.sofascore.com")
-fullUrl = f"https://api.sofascore.com"
-
-# Headers imitate http lib, becaus it's only thing that worked
-headers = {
-    'User-Agent': SKIP_HEADER,
-    'Accept-Encoding': 'identity',
-    'Accept': '*/*',
-    'Content-Length': '0',
-    "Cache-Control": "max-age=0",
-    "Pragma": "no-cache",
-}
-
-session = requests.Session()
-session.headers.update(headers)
+conn = http.client.HTTPSConnection("api.sofascore.com")
 
 def get_stats(mw, date):
     prefix_mapping = {
@@ -64,20 +48,14 @@ def get_stats(mw, date):
     date_str = date.strftime('%Y-%m-%d')
     url = f"/api/v1/category/{prefix}/scheduled-events/{date_str}" if prefix else f"/api/v1/sport/tennis/scheduled-events/{date_str}"
 
-    response = session.get(fullUrl + url, data={})
-    json_data = response.json()
-    print(response.headers)
-    print(response.history)
+    payload = ''
+    headers = {}
 
-    # payload = ''
-    # headers = {}
+    conn.request("GET", url, payload, headers)
+    res = conn.getresponse()
+    data = res.read()
 
-    # conn.request("GET", url, payload, headers)
-    # res = conn.getresponse()
-    # print(res.getheaders())
-    # data = res.read()
-
-    # json_data = json.loads(data.decode("utf-8"))
+    json_data = json.loads(data.decode("utf-8"))
     unsorted_matches = json_data.get('events', [])
     
     for match in unsorted_matches:
@@ -86,7 +64,7 @@ def get_stats(mw, date):
         print(f"Match: {home_team} vs. {away_team}")
         match_stats = extract_match_stats(match, date)
 
-        # print("Extracted Stats:", match_stats)
+        print("Extracted Stats:", match_stats)
         time.sleep(random.randint(0, 3)) # Slow down repeated
         break  # Only process the first match for testing
 
@@ -94,19 +72,14 @@ def extract_match_stats(match, date):
     match_id = match['id']
     match_stats_url = f"/api/v1/event/{match_id}/statistics"
 
-    response = session.get(fullUrl + match_stats_url, data={})
-    match_stats_data = response.json()
-    print(response.headers)
+    payload = ''
+    headers = {}
 
-    # payload = ''
-    # headers = {}
+    conn.request("GET", match_stats_url, payload, headers)
+    res = conn.getresponse()
+    data = res.read()
 
-    # conn.request("GET", match_stats_url, payload, headers)
-    # res = conn.getresponse()
-    # print(res.getheaders())
-    # data = res.read()
-
-    # match_stats_data = json.loads(data.decode("utf-8"))
+    match_stats_data = json.loads(data.decode("utf-8"))
 
     try:
         match_stats_all = match_stats_data["statistics"][0]["groups"]
