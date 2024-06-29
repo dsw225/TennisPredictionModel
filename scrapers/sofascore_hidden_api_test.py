@@ -64,7 +64,7 @@ def get_stats(mw, date):
         print(f"Match: {home_team} vs. {away_team}")
         match_stats = extract_match_stats(match, date)
 
-        print("Extracted Stats:", match_stats)
+        # print("Extracted Stats:", match_stats)
         time.sleep(random.randint(0, 3)) # Slow down repeated
         break  # Only process the first match for testing
 
@@ -78,6 +78,7 @@ def extract_match_stats(match, date):
     conn.request("GET", match_stats_url, payload, headers)
     res = conn.getresponse()
     data = res.read()
+    print(res.headers)
 
     match_stats_data = json.loads(data.decode("utf-8"))
 

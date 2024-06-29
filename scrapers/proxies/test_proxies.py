@@ -23,7 +23,7 @@ def test_proxies(filename, num_threads=10):
     # Define the thread function
     def test_proxy(proxy):
         try:
-            response = requests.get('http://httpbin.org/get', proxies={'http': proxy, 'https': proxy}, timeout=2)
+            response = requests.get('https://httpbin.org/get', proxies={'https': proxy}, timeout=2)
             if response.status_code == 200:
                 print(f'Successful proxy: {proxy}')
                 selected_proxies.append(proxy)
