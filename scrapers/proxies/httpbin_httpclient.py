@@ -1,6 +1,5 @@
 from http.client import HTTPConnection, HTTPException
 import json
-import random
 
 def read_proxies(file_path):
     try:

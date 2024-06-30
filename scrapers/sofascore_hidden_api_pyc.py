@@ -1,15 +1,67 @@
+import pycurl
+from io import BytesIO
 import json
 from datetime import datetime, timedelta
 import time
 import random
-from proxies.postproxies import read_proxies, get_new_conn, get_with_proxy
 
 iproxy = 0
+
+def read_proxies(file_path):
+    try:
+        with open(file_path, 'r') as csvfile:
+            proxies = [line.strip() for line in csvfile.readlines()]
+        return proxies
+    except FileNotFoundError:
+        print(f"Proxy file not found: {file_path}")
+        return []
+    
 proxies = read_proxies("scrapers/proxies/selected_proxies.csv")
+    
+def try_proxy(proxy, url):
+    proxy_host, proxy_port = proxy.split(':')
+    print(f"Trying Proxy Host: {proxy_host} Proxy Port: {proxy_port}")
+
+    buffer = BytesIO()
+    c = pycurl.Curl()
+    c.setopt(pycurl.URL, 'https://api.sofascore.com' + url)
+    c.setopt(pycurl.PROXY, proxy_host)
+    c.setopt(pycurl.PROXYPORT, int(proxy_port))
+    c.setopt(pycurl.PROXYTYPE, pycurl.PROXYTYPE_HTTP)
+    c.setopt(pycurl.WRITEFUNCTION, buffer.write)
+
+    try:
+        c.perform()
+        c.close()
+        body = buffer.getvalue().decode('utf-8')
+        
+        if not body.strip():
+            print("Empty response body")
+            return None
+
+        try:
+            json_data = json.loads(body)
+            return json_data
+        except json.JSONDecodeError as e:
+            print(f"Failed to decode JSON: {e}")
+            return None
+
+    except pycurl.error as e:
+        print(f"Proxy {proxy} failed: {e}")
+        return None
+
+def get_with_proxy(url):
+    global iproxy
+
+    for proxy in range(iproxy, len(proxies)):
+        json_data = try_proxy(proxies[proxy], url)
+        if json_data is not None:
+            iproxy = proxy
+            return json_data
+    else:
+        print("All proxies failed.")
 
 def get_stats(mw, date):
-    global conn
-    global iproxy
     prefix_mapping = {
         'm': '3', 'w': '6', 'mc': '72', 'wc': '871', 'mi': '785', 'wi': '213'
     }
@@ -17,7 +69,7 @@ def get_stats(mw, date):
     date_str = date.strftime('%Y-%m-%d')
     url = f"/api/v1/category/{prefix}/scheduled-events/{date_str}" if prefix else f"/api/v1/sport/tennis/scheduled-events/{date_str}"
 
-    json_data, conn = get_new_conn(url, iproxy, proxies)
+    json_data = get_with_proxy(url)
 
     unsorted_matches = json_data.get('events', [])
     
@@ -32,15 +84,10 @@ def get_stats(mw, date):
         # break  # Only process the first match for testing
 
 def extract_match_stats(match, date):
-    global conn
-    global iproxy
     match_id = match['id']
     match_stats_url = f"/api/v1/event/{match_id}/statistics"
 
-    try:
-        match_stats_data, conn = get_with_proxy(match_stats_url, iproxy, conn, proxies)
-    except Exception as e:
-        match_stats_data, conn = get_new_conn(match_stats_url, iproxy, proxies)
+    match_stats_data = get_with_proxy(match_stats_url)
 
     try:
         match_stats_all = match_stats_data["statistics"][0]["groups"]

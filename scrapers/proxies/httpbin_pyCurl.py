@@ -16,19 +16,35 @@ def try_proxy(proxy):
     print(f"Trying Proxy Host: {proxy_host} Proxy Port: {proxy_port}")
 
     buffer = BytesIO()
+    # header_buffer = BytesIO()
     c = pycurl.Curl()
-    c.setopt(pycurl.URL, 'http://httpbin.org/get')
+    c.setopt(pycurl.URL, 'https://api.sofascore.com/api/v1/event/12432712')
     c.setopt(pycurl.PROXY, proxy_host)
     c.setopt(pycurl.PROXYPORT, int(proxy_port))
     c.setopt(pycurl.PROXYTYPE, pycurl.PROXYTYPE_HTTP)
     c.setopt(pycurl.WRITEFUNCTION, buffer.write)
+    # c.setopt(pycurl.HEADERFUNCTION, header_buffer.write)
 
     try:
         c.perform()
         c.close()
         body = buffer.getvalue().decode('utf-8')
-        json_data = json.loads(body)
-        return json_data
+
+        # headers = header_buffer.getvalue().decode('iso-8859-1')
+        # print("Response Headers:")
+        # print(headers)
+        
+        if not body.strip():
+            print("Empty response body")
+            return None
+
+        try:
+            json_data = json.loads(body)
+            return json_data
+        except json.JSONDecodeError as e:
+            print(f"Failed to decode JSON: {e}")
+            return None
+
     except pycurl.error as e:
         print(f"Proxy {proxy} failed: {e}")
         return None

@@ -15,7 +15,7 @@ def extract_proxies(url):
 def test_proxies(proxies, num_threads=10):
     def test_proxy(proxy):
         try:
-            response = requests.get('https://httpbin.org/get', proxies={'https': proxy}, timeout=2)
+            response = requests.get('http://httpbin.org/get', proxies={'http': proxy, 'https': proxy}, timeout=2)
             if response.status_code == 200:
                 print(f'Successful proxy: {proxy}')
                 selected_proxies.append(proxy)
@@ -40,4 +40,4 @@ def test_proxies(proxies, num_threads=10):
     # Return the number of successful proxies
     return len(selected_proxies)
 
-test_proxies(extract_proxies('https://free-proxy-list.net/', ''))
+test_proxies(extract_proxies('https://free-proxy-list.net/'))
