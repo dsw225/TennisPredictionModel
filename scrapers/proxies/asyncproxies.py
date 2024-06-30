@@ -1,13 +1,12 @@
 import aiohttp
 import asyncio
+import aiofiles
 import json
 
-iproxy = 0
-
-def read_proxies(file_path):
+async def read_proxies(file_path):
     try:
-        with open(file_path, 'r') as csvfile:
-            proxies = [line.strip() for line in csvfile.readlines()]
+        async with aiofiles.open(file_path, 'r') as csvfile:
+            proxies = [line.strip() for line in await csvfile.readlines()]
         return proxies
     except FileNotFoundError:
         print(f"Proxy file not found: {file_path}")
@@ -29,7 +28,7 @@ async def get_connection(proxy, url):
     connector = aiohttp.TCPConnector()
     session = aiohttp.ClientSession(connector=connector)
 
-    proxy_url = f'http://{proxy_host}:{proxy_port}'
+    proxy_url = f'http://{proxy}'
 
     try:
         async with session.get(url, proxy=proxy_url) as response:
@@ -59,4 +58,3 @@ async def get_with_proxy(url, iproxy, session, proxies):
     except (aiohttp.ClientError, Exception) as e:
         print(f"Current proxy failed: {e}")
         return await get_new_conn(url, iproxy, proxies)
-
