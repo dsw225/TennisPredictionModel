@@ -2,12 +2,14 @@ import json
 from datetime import datetime, timedelta
 import time
 import random
-from proxies.postproxies import read_proxies, get_new_conn, get_with_proxy
+import asyncio
+from proxies.asyncproxies import read_proxies, get_new_conn, get_with_proxy
 
 iproxy = 0
 proxies = read_proxies("scrapers/proxies/selected_proxies.csv")
+base_url = "http://api.sofascore.com"
 
-def get_stats(mw, date):
+async def get_stats(mw, date):
     global conn
     global iproxy
     prefix_mapping = {
@@ -17,7 +19,7 @@ def get_stats(mw, date):
     date_str = date.strftime('%Y-%m-%d')
     url = f"/api/v1/category/{prefix}/scheduled-events/{date_str}" if prefix else f"/api/v1/sport/tennis/scheduled-events/{date_str}"
 
-    json_data, conn = get_new_conn(url, iproxy, proxies)
+    json_data, conn = await get_new_conn(base_url + url, iproxy, proxies)
 
     unsorted_matches = json_data.get('events', [])
     
@@ -25,22 +27,22 @@ def get_stats(mw, date):
         home_team = match.get("homeTeam", {}).get("slug", "N/A")
         away_team = match.get("awayTeam", {}).get("slug", "N/A")
         print(f"Match: {home_team} vs. {away_team}")
-        match_stats = extract_match_stats(match, date)
+        match_stats = await extract_match_stats(match, date)
 
         print("Extracted Stats:", match_stats)
-        time.sleep(random.randint(0, 3)) # Slow down repeated
+        await asyncio.sleep(random.randint(0, 3))  # Slow down repeated
         # break  # Only process the first match for testing
 
-def extract_match_stats(match, date):
+async def extract_match_stats(match, date):
     global conn
     global iproxy
     match_id = match['id']
     match_stats_url = f"/api/v1/event/{match_id}/statistics"
 
     try:
-        match_stats_data, conn = get_with_proxy(match_stats_url, iproxy, conn, proxies)
+        match_stats_data, conn = await get_with_proxy(base_url + match_stats_url, iproxy, conn, proxies)
     except Exception as e:
-        match_stats_data, conn = get_new_conn(match_stats_url, iproxy, proxies)
+        match_stats_data, conn = await get_new_conn(base_url + match_stats_url, iproxy, proxies)
 
     try:
         match_stats_all = match_stats_data["statistics"][0]["groups"]
@@ -101,9 +103,9 @@ def set_stats(stats, prefix, home_away, scores, stats_items):
     stats[prefix + "_bpSaved"] = stats_items[7].get(home_away + "Value", 0)
     stats[prefix + "_bpFaced"] = stats_items[7].get(home_away + "Total", 0)
 
-# Example call
-def main():
-    get_stats('m', datetime.now() - timedelta(days=10))
+
+async def main():
+    await get_stats('m', datetime.now() - timedelta(days=10))
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
