@@ -14,7 +14,7 @@ async def try_proxy(proxy):
     print(f"Trying Proxy: {proxy}")
     async with aiohttp.ClientSession(trust_env=True) as session:
         try:
-            async with session.get("https://httpbin.org/get", proxy=f"http://{proxy}") as response:
+            async with session.get("https://api.sofascore.com/api/v1/event/12432712", proxy=f"http://{proxy}") as response:
                 print("Status:", response.status)
                 print("Content-type:", response.headers['content-type'])
 

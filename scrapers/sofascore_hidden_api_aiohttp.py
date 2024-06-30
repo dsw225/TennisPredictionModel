@@ -43,6 +43,15 @@ async def extract_match_stats(match, date):
     except Exception as e:
         match_stats_data, conn = await get_new_conn(base_url + match_stats_url, iproxy, proxies)
 
+    match_info_url = f"/api/v1/event/{match_id}"
+
+    # try:
+    #     match_info_data, conn = await get_with_proxy(base_url + match_info_url, iproxy, conn, proxies)
+    # except Exception as e:
+    #     match_info_data, conn = await get_new_conn(base_url + match_info_url, iproxy, proxies)
+
+    match_info_data = match
+
     try:
         match_stats_all = match_stats_data["statistics"][0]["groups"]
     except KeyError as e:
@@ -50,32 +59,32 @@ async def extract_match_stats(match, date):
         return {}
 
     game_level = {2000: 'G', 1000: 'M'}
-    tourney_level = game_level.get(match["tournament"]["uniqueTournament"].get("tennisPoints", 0), 'A')
+    tourney_level = game_level.get(match_info_data["tournament"]["uniqueTournament"].get("tennisPoints", 0), 'A')
 
-    elapsed_time = datetime.fromtimestamp(match["changes"]["changeTimestamp"]) - datetime.fromtimestamp(match["time"]["currentPeriodStartTimestamp"])
+    elapsed_time = datetime.fromtimestamp(match_info_data["changes"]["changeTimestamp"]) - datetime.fromtimestamp(match_info_data["time"]["currentPeriodStartTimestamp"])
     minutes = int(elapsed_time.total_seconds() // 60)
 
     round_level = {29: 'F', 28: 'SF', 27: 'QF', 5: 'R16', 6: 'R32', 32: 'R64', 64: 'R128', 1: 'RR'}
-    round = round_level.get(match["roundInfo"].get("round", 0), 'RR')
+    round = round_level.get(match_info_data["roundInfo"].get("round", 0), 'RR')
 
-    player_a_wins = match["homeScore"]["current"]
-    player_b_wins = match["awayScore"]["current"]
+    player_a_wins = match_info_data["homeScore"]["current"]
+    player_b_wins = match_info_data["awayScore"]["current"]
 
     best_of = 3 if player_a_wins == 2 or player_b_wins == 2 else 5 if player_a_wins == 3 or player_b_wins == 3 else 0
 
-    stats = initialize_stats(match, tourney_level, date, best_of, round, minutes)
+    stats = initialize_stats(match_info_data, tourney_level, date, best_of, round, minutes)
     hand_table = {"right-handed": 'R', "left-handed": 'L'}
     
-    if match['winnerCode'] == 1:
-        set_stats(stats, "w", "home", match["homeScore"], match_stats_all[0]["statisticsItems"])
-        set_stats(stats, "l", "away", match["awayScore"], match_stats_all[0]["statisticsItems"])
-        set_player_stats(stats, "winner", match["homeTeam"], match, "homeTeamSeed", hand_table)
-        set_player_stats(stats, "loser", match["awayTeam"], match, "awayTeamSeed", hand_table)
+    if match_info_data['winnerCode'] == 1:
+        set_stats(stats, "w", "home", match_info_data["homeScore"], match_stats_all[0]["statisticsItems"])
+        set_stats(stats, "l", "away", match_info_data["awayScore"], match_stats_all[0]["statisticsItems"])
+        set_player_stats(stats, "winner", match_info_data["homeTeam"], match_info_data, "homeTeamSeed", hand_table)
+        set_player_stats(stats, "loser", match_info_data["awayTeam"], match_info_data, "awayTeamSeed", hand_table)
     else:
-        set_stats(stats, "w", "away", match["awayScore"], match_stats_all[0]["statisticsItems"])
-        set_stats(stats, "l", "home", match["homeScore"], match_stats_all[0]["statisticsItems"])
-        set_player_stats(stats, "winner", match["awayTeam"], match, "awayTeamSeed", hand_table)
-        set_player_stats(stats, "loser", match["homeTeam"], match, "homeTeamSeed", hand_table)
+        set_stats(stats, "w", "away", match_info_data["awayScore"], match_stats_all[0]["statisticsItems"])
+        set_stats(stats, "l", "home", match_info_data["homeScore"], match_stats_all[0]["statisticsItems"])
+        set_player_stats(stats, "winner", match_info_data["awayTeam"], match_info_data, "awayTeamSeed", hand_table)
+        set_player_stats(stats, "loser", match_info_data["homeTeam"], match_info_data, "homeTeamSeed", hand_table)
 
     return stats
 
