@@ -64,7 +64,7 @@ async def get_year_to_date(mw):
     day_of_year = current_date.timetuple().tm_yday
     games_in_year = []
 
-    for day in range(day_of_year-12, day_of_year-13, -1):
+    for day in range(day_of_year-10, day_of_year-13, -1):
         # Calculate the date for each day in reverse order
         date = current_date - datetime.timedelta(days=day_of_year - day)
         matches = await get_stats(mw, date)
@@ -188,10 +188,10 @@ def set_player_stats(stats, prefix, team, match, key, hand_table):
     stats[f"{prefix}_id"] = team.get("id", "")
     stats[f"{prefix}_seed"] = match.get(key, '') if match.get(key, '').isdigit() else ''
     stats[f"{prefix}_entry"] = match.get(key, '') if not match.get(key, '').isdigit() else ''
-    stats[f"{prefix}_hand"] = hand_table.get(team["playerTeamInfo"].get("plays", ''), 'U')
-    stats[f"{prefix}_ht"] = team["playerTeamInfo"].get("height", '') * 100 if team["playerTeamInfo"].get("height", '') != '' else ''
+    stats[f"{prefix}_hand"] = hand_table.get(team.get("playerTeamInfo", {}).get("plays", ''), 'U')
+    stats[f"{prefix}_ht"] = team.get("playerTeamInfo", {}).get("height", '') * 100 if team.get("playerTeamInfo", {}).get("height", '') != '' else ''
     stats[f"{prefix}_ioc"] = team.get("country", {}).get("alpha3", '')
-    stats[f"{prefix}_age"] = (datetime.datetime.now() - datetime.datetime.fromtimestamp(team["playerTeamInfo"].get("birthDateTimestamp", ''))).days // 365 if team["playerTeamInfo"].get("birthDateTimestamp", '') != '' else ''
+    stats[f"{prefix}_age"] = (datetime.datetime.now() - datetime.datetime.fromtimestamp(team.get("playerTeamInfo", {}).get("birthDateTimestamp", ''))).days // 365 if team.get("playerTeamInfo", {}).get("birthDateTimestamp", '') != '' else ''
 
 def set_stats(stats, prefix, home_away, scores, stats_items):
     stats[prefix + "1"] = scores.get("period1", 0)
