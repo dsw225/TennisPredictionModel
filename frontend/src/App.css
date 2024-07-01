@@ -17,27 +17,28 @@
   display: flex;
   justify-content: center;
   align-items: center;
+  padding: 20px; /* Ensure padding for smaller screens */
 }
 
 .body {
   font-family: Gotham;
   color: var(--text-light);
   max-width: 800px;
-  width: 90%; /* Adjust as needed */
+  width: 100%; /* Ensure it takes the full width */
   margin: 0 auto;
   padding: 10px;
   display: flex;
   justify-content: center;
   align-items: center;
   flex-direction: column;
+  text-align: center; /* Ensure text is centered */
 }
 
 img {
   max-width: 100%; /* Ensure the image scales with its container */
   height: auto; /* Maintain aspect ratio */
   display: block;
-  margin-left: auto;
-  margin-right: auto;
+  margin: 0 auto; /* Center the image */
   filter: drop-shadow(5px 5px 5px rgb(0, 0, 0, .8));
 }
 
@@ -46,14 +47,27 @@ h1 {
 }
 
 .landing {
-  text-align: center;
-  padding: 0 0 30px 0;
+  padding-bottom: 30px;
   filter: drop-shadow(0px 0px 140px rgba(170, 170, 170, .9)) drop-shadow(0px 0px 30px rgba(170, 170, 170, 0.7));
 }
 
 /* Media query for smaller screens */
 @media (max-width: 800px) {
   .body {
-    max-width: 90%; /* Adjust as needed */
+    max-width: 100%; /* Ensure it takes the full width on smaller screens */
+    padding: 20px; /* Adjust padding for better spacing */
+  }
+
+  .landing {
+    padding-bottom: 20px; /* Adjust padding for better spacing */
+  }
+
+  img {
+    max-width: 100%; /* Ensure the image scales with its container */
+    height: auto; /* Maintain aspect ratio */
+  }
+
+  h1 {
+    font-size: 1.5em; /* Adjust font size for smaller screens */
   }
 }
