@@ -32,21 +32,32 @@ async def read_proxies(file_path):
         print(f"Proxy file not found: {file_path}")
         return None, None
 
-async def fetch(session, url, proxy_url=None, auth=None):
-    while True:
-        try:
-            print(f"Fetching URL: {url} with proxy: {proxy_url.split('@')[1]}")
-            async with session.get(url, proxy=proxy_url, proxy_auth=auth, headers=headers) as response:
-                # print(f"Response status: {response.status}")
-                if response.status == 200:
-                    return await response.json()
-                elif response.status == 404:
-                    print("404 error: No statistics available for this match.")
-                    return None
-                else:
-                    print(f"Request failed with status: {response.status}. Retrying...")
-        except aiohttp.ClientError as e:
-            print(f"Client error: {e}. Retrying...")
+async def fetch(url, proxy_url=None, auth=None):
+    retries = 3  # Number of retries
+    backoff_factor = 2  # Exponential backoff factor
+    headers = {'User-Agent': 'Your User Agent'}
+
+    async with aiohttp.ClientSession(trust_env=True) as session:
+        while retries > 0:
+            try:
+                if proxy_url:
+                    print(f"Fetching URL: {url} with proxy: {proxy_url.split('@')[1]}")
+                async with session.get(url, proxy=proxy_url, proxy_auth=auth, headers=headers) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        return data
+                    elif response.status == 404:
+                        print("404 error: No statistics available for this match.")
+                        return None
+                    else:
+                        print(f"Request failed with status: {response.status}. Retrying...")
+            except aiohttp.ClientError as e:
+                print(f"Client error: {e}. Retrying...")
+            
+            retries -= 1
+            await asyncio.sleep(backoff_factor * (3 - retries))  # Exponential backoff
+    
+    return None
 
 async def get_year_to_date(mw):
     current_date = datetime.date.today()
@@ -71,46 +82,41 @@ async def get_stats(mw, date):
     prefix = prefix_mapping.get(mw, '')
     date_stats = []
     date_str = date.strftime('%Y-%m-%d')
-    # print(f"Type: {type(date_str)} with val {date_str}")
     url = f"/api/v1/category/{prefix}/scheduled-events/{date_str}" if prefix else f"/api/v1/sport/tennis/scheduled-events/{date_str}"
 
-    async with aiohttp.ClientSession(trust_env=True) as session:
-        json_data = await fetch(session, base_url+url, proxy_url, auth)
-        if not json_data:
-            print("No data returned.")
-            return
-        
-        await asyncio.sleep(random.randint(1, 4)) 
-        
-        unsorted_matches = json_data.get('events', [])
-        unsorted_matches = [match for match in unsorted_matches if not ('doubles' in match.get('tournament', {}).get('slug', ''))] # Remove all doubles
-        print(f"Found {len(unsorted_matches)} matches.")
+    json_data = await fetch(base_url+url, proxy_url, auth)
+    if not json_data:
+        print("No data returned.")
+        return
+    
+    
+    unsorted_matches = json_data.get('events', [])
+    unsorted_matches = [match for match in unsorted_matches if not ('doubles' in match.get('tournament', {}).get('slug', ''))] # Remove all doubles
+    print(f"Found {len(unsorted_matches)} matches.")
 
-        for match in unsorted_matches:
-            match_id = match['id']
-            match_stats_url = f"/api/v1/event/{match_id}/statistics"
-            match_info_url = f"/api/v1/event/{match_id}"
+    for match in unsorted_matches:
+        match_id = match['id']
+        match_stats_url = f"/api/v1/event/{match_id}/statistics"
+        match_info_url = f"/api/v1/event/{match_id}"
 
-            match_stats = await fetch(session, base_url+match_stats_url, proxy_url, auth)
-            if not match_stats:
-                print(f"No statistics found for match ID {match_id}. Skipping to next match.")
-                continue
+        match_stats = await fetch(base_url+match_stats_url, proxy_url, auth)
+        if not match_stats:
+            print(f"No statistics found for match ID {match_id}. Skipping to next match.")
+            continue
 
-            await asyncio.sleep(random.randint(1, 4)) 
+        match_info = await fetch(base_url+match_info_url, proxy_url, auth)
+        if not match_info:
+            print(f"Failed to fetch event info for match ID {match_id}.")
+            continue
 
-            match_info = await fetch(session, base_url+match_info_url, proxy_url, auth)
-            if not match_info:
-                print(f"Failed to fetch event info for match ID {match_id}.")
-                continue
+        # home_team = match.get("homeTeam", {}).get("slug", "N/A")
+        # away_team = match.get("awayTeam", {}).get("slug", "N/A")
+        # print(f"Match: {home_team} vs. {away_team}")
+        match_stats = await extract_match_stats(match_info, match_stats, date)
+        date_stats.append(match_stats)
 
-            # home_team = match.get("homeTeam", {}).get("slug", "N/A")
-            # away_team = match.get("awayTeam", {}).get("slug", "N/A")
-            # print(f"Match: {home_team} vs. {away_team}")
-            match_stats = await extract_match_stats(match_info, match_stats, date)
-            date_stats.append(match_stats)
-
-            print(f"Finished retrieval of match {match_id}")
-            await asyncio.sleep(random.randint(1, 4))  # Slow down repeated requests
+        print(f"Finished retrieval of match {match_id}")
+        # await asyncio.sleep(random.randint(0, 4))  # Slow down repeated requests
 
     return date_stats
 
