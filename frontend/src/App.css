@@ -1,0 +1,44 @@
+:root {
+  --color-theme: #001522;
+  --header-color: #B2A092;
+  --text-dark: #000000;
+  --text-light: #ffffff;
+  --pages-width: calc(90vh);
+}
+
+@font-face {
+  font-family: Gotham;
+  src: url(/public/fonts/Gotham/Gotham-Book.otf);
+}
+
+.full {
+  min-height: 100vh;
+  background: var(--color-theme);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.body {
+  font-family: Gotham;
+  color: var(--text-light);
+  max-width: 800px;
+  height: auto;
+  margin: 0 auto;
+  padding: 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
+
+img {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.landing {
+  text-align: center;
+  padding: 0 0 30px 0;
+}
