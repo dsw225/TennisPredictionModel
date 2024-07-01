@@ -89,11 +89,11 @@ async def main():
     proxy = proxies[0]
     for i in range(1):
         # json_data = await try_proxy(proxy)
-        json_data, _ = await get_with_proxy("https://api.sofascore.com/api/v1/category/3/scheduled-events/2024-06-28", proxy)
-        unsorted_matches = json_data.get('events', [])
-        print(len(unsorted_matches))
-        # if json_data is not None:
-        #     print(f"AIOHTTP {i}: ", json_data)
+        json_data, _ = await get_with_proxy("https://api.sofascore.com/api/v1/event/12429004", proxy)
+        # unsorted_matches = json_data.get('events', [])
+        # print(len(unsorted_matches))
+        if json_data is not None:
+            print(f"AIOHTTP {i}: ", json_data)
     # else:
     #     print("All proxies failed.")
 

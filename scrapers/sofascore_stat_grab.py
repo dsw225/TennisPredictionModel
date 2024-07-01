@@ -1,13 +1,18 @@
-import json
-from datetime import datetime, timedelta
-import time
-import random
+import datetime
 import asyncio
 import aiohttp
 import aiofiles
+import pandas as pd
+import random
 
 base_url = "https://api.sofascore.com"
 headers = {'User-Agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36'}
+pd_headers = ['tourney_id','tourney_name','surface','draw_size','tourney_level','tourney_date',
+              'match_num','best_of','round','minutes','winner_id','winner_seed','winner_entry','winner_name','winner_hand',
+              'winner_ht','winner_ioc','winner_age','loser_id','loser_seed','loser_entry','loser_name',
+              'loser_hand','loser_ht','loser_ioc','loser_age','score','w1','w2','w3','w4','w5','w_ace',
+              'w_df','w_svpt','w_1stIn','w_1stWon','w_2ndWon','w_SvGms','w_bpSaved','w_bpFaced','l1','l2','l3','l4','l5','l_ace','l_df',
+              'l_svpt','l_1stIn','l_1stWon','l_2ndWon','l_SvGms','l_bpSaved','l_bpFaced','winner_rank','winner_rank_points','loser_rank','loser_rank_points']
 
 async def read_proxies(file_path):
     try:
@@ -30,9 +35,9 @@ async def read_proxies(file_path):
 async def fetch(session, url, proxy_url=None, auth=None):
     while True:
         try:
-            print(f"Fetching URL: {url} with proxy {proxy_url}")
+            print(f"Fetching URL: {url} with proxy: {proxy_url.split('@')[1]}")
             async with session.get(url, proxy=proxy_url, proxy_auth=auth, headers=headers) as response:
-                print(f"Response status: {response.status}")
+                # print(f"Response status: {response.status}")
                 if response.status == 200:
                     return await response.json()
                 elif response.status == 404:
@@ -43,12 +48,30 @@ async def fetch(session, url, proxy_url=None, auth=None):
         except aiohttp.ClientError as e:
             print(f"Client error: {e}. Retrying...")
 
+async def get_year_to_date(mw):
+    current_date = datetime.date.today()
+    day_of_year = current_date.timetuple().tm_yday
+    games_in_year = []
+
+    for day in range(day_of_year-12, day_of_year-13, -1):
+        # Calculate the date for each day in reverse order
+        date = current_date - datetime.timedelta(days=day_of_year - day)
+        matches = await get_stats(mw, date)
+        games_in_year.extend(matches)
+
+    all_games = pd.DataFrame(games_in_year, columns=pd_headers)
+    all_games = all_games.sort_values(by='tourney_date').reset_index(drop=True)
+    return all_games
+
+
 async def get_stats(mw, date):
     prefix_mapping = {
         'm': '3', 'w': '6', 'mc': '72', 'wc': '871', 'mi': '785', 'wi': '213'
     }
     prefix = prefix_mapping.get(mw, '')
+    date_stats = []
     date_str = date.strftime('%Y-%m-%d')
+    # print(f"Type: {type(date_str)} with val {date_str}")
     url = f"/api/v1/category/{prefix}/scheduled-events/{date_str}" if prefix else f"/api/v1/sport/tennis/scheduled-events/{date_str}"
 
     async with aiohttp.ClientSession(trust_env=True) as session:
@@ -56,6 +79,8 @@ async def get_stats(mw, date):
         if not json_data:
             print("No data returned.")
             return
+        
+        await asyncio.sleep(random.randint(1, 4)) 
         
         unsorted_matches = json_data.get('events', [])
         unsorted_matches = [match for match in unsorted_matches if not ('doubles' in match.get('tournament', {}).get('slug', ''))] # Remove all doubles
@@ -71,18 +96,23 @@ async def get_stats(mw, date):
                 print(f"No statistics found for match ID {match_id}. Skipping to next match.")
                 continue
 
+            await asyncio.sleep(random.randint(1, 4)) 
+
             match_info = await fetch(session, base_url+match_info_url, proxy_url, auth)
             if not match_info:
                 print(f"Failed to fetch event info for match ID {match_id}.")
                 continue
 
-            home_team = match.get("homeTeam", {}).get("slug", "N/A")
-            away_team = match.get("awayTeam", {}).get("slug", "N/A")
-            print(f"Match: {home_team} vs. {away_team}")
+            # home_team = match.get("homeTeam", {}).get("slug", "N/A")
+            # away_team = match.get("awayTeam", {}).get("slug", "N/A")
+            # print(f"Match: {home_team} vs. {away_team}")
             match_stats = await extract_match_stats(match_info, match_stats, date)
+            date_stats.append(match_stats)
 
-            print("Extracted Stats:", match_stats)
-            await asyncio.sleep(random.randint(0, 3))  # Slow down repeated requests
+            print(f"Finished retrieval of match {match_id}")
+            await asyncio.sleep(random.randint(1, 4))  # Slow down repeated requests
+
+    return date_stats
 
 async def extract_match_stats(match_info, match_stats, date):
     try:
@@ -95,11 +125,11 @@ async def extract_match_stats(match_info, match_stats, date):
     game_level = {2000: 'G', 1000: 'M'}
     tourney_level = game_level.get(match_info_data["tournament"]["uniqueTournament"].get("tennisPoints", 0), 'A')
 
-    elapsed_time = datetime.fromtimestamp(match_info_data["changes"]["changeTimestamp"]) - datetime.fromtimestamp(match_info_data["time"]["currentPeriodStartTimestamp"])
+    elapsed_time = datetime.datetime.fromtimestamp(match_info_data["changes"]["changeTimestamp"]) - datetime.datetime.fromtimestamp(match_info_data["time"]["currentPeriodStartTimestamp"])
     minutes = int(elapsed_time.total_seconds() // 60)
 
     round_level = {29: 'F', 28: 'SF', 27: 'QF', 5: 'R16', 6: 'R32', 32: 'R64', 64: 'R128', 1: 'RR'}
-    round = round_level.get(match_info_data["roundInfo"].get("round", 0), 'RR')
+    round = round_level.get(match_info_data.get("roundInfo", {}).get("round", 0), 'RR')
 
     player_a_wins = match_info_data["homeScore"]["current"]
     player_b_wins = match_info_data["awayScore"]["current"]
@@ -150,12 +180,12 @@ def set_player_stats(stats, prefix, team, match, key, hand_table):
     stats[f"{prefix}_rank"] = team.get("ranking", '')
     stats[f"{prefix}_name"] = team.get("slug", "N/A")
     stats[f"{prefix}_id"] = team.get("id", "")
-    stats[f"{prefix}_seed"] = match.get(key, '') if match.get(key, '') != 'Q' else ''
-    stats[f"{prefix}_entry"] = match.get(key, '') if match.get(key, '') == 'Q' else ''
+    stats[f"{prefix}_seed"] = match.get(key, '') if match.get(key, '').isdigit() else ''
+    stats[f"{prefix}_entry"] = match.get(key, '') if not match.get(key, '').isdigit() else ''
     stats[f"{prefix}_hand"] = hand_table.get(team["playerTeamInfo"].get("plays", ''), 'U')
     stats[f"{prefix}_ht"] = team["playerTeamInfo"].get("height", '') * 100 if team["playerTeamInfo"].get("height", '') != '' else ''
     stats[f"{prefix}_ioc"] = team.get("country", {}).get("alpha3", '')
-    stats[f"{prefix}_age"] = (datetime.now() - datetime.fromtimestamp(team["playerTeamInfo"].get("birthDateTimestamp", ''))).days // 365 if team["playerTeamInfo"].get("birthDateTimestamp", '') != '' else ''
+    stats[f"{prefix}_age"] = (datetime.datetime.now() - datetime.datetime.fromtimestamp(team["playerTeamInfo"].get("birthDateTimestamp", ''))).days // 365 if team["playerTeamInfo"].get("birthDateTimestamp", '') != '' else ''
 
 def set_stats(stats, prefix, home_away, scores, stats_items):
     stats[prefix + "1"] = scores.get("period1", 0)
@@ -177,7 +207,11 @@ async def main():
     global proxy_url
     global auth
     proxy_url, auth = await read_proxies("scrapers/proxy_addresses/smartproxy.csv")
-    await get_stats('m', datetime.now() - timedelta(days=1))
+
+    # await get_stats('m', datetime.datetime.now() - datetime.timedelta(days=2))
+    data = await get_year_to_date('m')
+    data.to_csv('test3compare.csv', index=False)
+    print("Completed Run Successfully")
 
 if __name__ == "__main__":
     asyncio.run(main())
