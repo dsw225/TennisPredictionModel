@@ -5,7 +5,7 @@ import random
 from proxies.postproxies import read_proxies, get_new_conn, get_with_proxy
 
 iproxy = 0
-proxies = read_proxies("scrapers/proxies/selected_proxies.csv")
+proxies = read_proxies("scrapers/proxy_addresses/selected_proxies.csv")
 
 def get_stats(mw, date):
     global conn

@@ -3,14 +3,47 @@ from datetime import datetime, timedelta
 import time
 import random
 import asyncio
-from proxies.asyncproxies import read_proxies, get_new_conn, get_with_proxy
+import aiohttp
+import aiofiles
 
-iproxy = 0
-base_url = "http://api.sofascore.com"
+base_url = "https://api.sofascore.com"
+headers = {'User-Agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36'}
+
+async def read_proxies(file_path):
+    try:
+        async with aiofiles.open(file_path, 'r') as csvfile:
+            proxies = [line.strip() for line in await csvfile.readlines()]
+        proxy_parts = proxies[0].split(':')
+        if len(proxy_parts) == 4:
+            proxy_host, proxy_port, proxy_user, proxy_pass = proxy_parts
+            proxy_url = f'http://{proxy_user}:{proxy_pass}@{proxy_host}:{proxy_port}'
+            auth = aiohttp.BasicAuth(proxy_user, proxy_pass)
+        else:  # Proxy without authentication
+            proxy_host, proxy_port = proxy_parts
+            proxy_url = f'http://{proxy_host}:{proxy_port}'
+            auth = None
+        return proxy_url, auth
+    except FileNotFoundError:
+        print(f"Proxy file not found: {file_path}")
+        return None, None
+
+async def fetch(session, url, proxy_url=None, auth=None):
+    while True:
+        try:
+            print(f"Fetching URL: {url} with proxy {proxy_url}")
+            async with session.get(url, proxy=proxy_url, proxy_auth=auth, headers=headers) as response:
+                print(f"Response status: {response.status}")
+                if response.status == 200:
+                    return await response.json()
+                elif response.status == 404:
+                    print("404 error: No statistics available for this match.")
+                    return None
+                else:
+                    print(f"Request failed with status: {response.status}. Retrying...")
+        except aiohttp.ClientError as e:
+            print(f"Client error: {e}. Retrying...")
 
 async def get_stats(mw, date):
-    global conn
-    global iproxy
     prefix_mapping = {
         'm': '3', 'w': '6', 'mc': '72', 'wc': '871', 'mi': '785', 'wi': '213'
     }
@@ -18,42 +51,43 @@ async def get_stats(mw, date):
     date_str = date.strftime('%Y-%m-%d')
     url = f"/api/v1/category/{prefix}/scheduled-events/{date_str}" if prefix else f"/api/v1/sport/tennis/scheduled-events/{date_str}"
 
-    json_data, conn = await get_new_conn(base_url + url, iproxy, proxies)
+    async with aiohttp.ClientSession(trust_env=True) as session:
+        json_data = await fetch(session, base_url+url, proxy_url, auth)
+        if not json_data:
+            print("No data returned.")
+            return
+        
+        unsorted_matches = json_data.get('events', [])
+        unsorted_matches = [match for match in unsorted_matches if not ('doubles' in match.get('tournament', {}).get('slug', ''))] # Remove all doubles
+        print(f"Found {len(unsorted_matches)} matches.")
 
-    unsorted_matches = json_data.get('events', [])
-    
-    for match in unsorted_matches:
-        home_team = match.get("homeTeam", {}).get("slug", "N/A")
-        away_team = match.get("awayTeam", {}).get("slug", "N/A")
-        print(f"Match: {home_team} vs. {away_team}")
-        match_stats = await extract_match_stats(match, date)
+        for match in unsorted_matches:
+            match_id = match['id']
+            match_stats_url = f"/api/v1/event/{match_id}/statistics"
+            match_info_url = f"/api/v1/event/{match_id}"
 
-        print("Extracted Stats:", match_stats)
-        await asyncio.sleep(random.randint(0, 3))  # Slow down repeated
-        # break  # Only process the first match for testing
+            match_stats = await fetch(session, base_url+match_stats_url, proxy_url, auth)
+            if not match_stats:
+                print(f"No statistics found for match ID {match_id}. Skipping to next match.")
+                continue
 
-async def extract_match_stats(match, date):
-    global conn
-    global iproxy
-    match_id = match['id']
-    match_stats_url = f"/api/v1/event/{match_id}/statistics"
+            match_info = await fetch(session, base_url+match_info_url, proxy_url, auth)
+            if not match_info:
+                print(f"Failed to fetch event info for match ID {match_id}.")
+                continue
 
+            home_team = match.get("homeTeam", {}).get("slug", "N/A")
+            away_team = match.get("awayTeam", {}).get("slug", "N/A")
+            print(f"Match: {home_team} vs. {away_team}")
+            match_stats = await extract_match_stats(match_info, match_stats, date)
+
+            print("Extracted Stats:", match_stats)
+            await asyncio.sleep(random.randint(0, 3))  # Slow down repeated requests
+
+async def extract_match_stats(match_info, match_stats, date):
     try:
-        match_stats_data, conn = await get_with_proxy(base_url + match_stats_url, iproxy, conn, proxies)
-    except Exception as e:
-        match_stats_data, conn = await get_new_conn(base_url + match_stats_url, iproxy, proxies)
-
-    match_info_url = f"/api/v1/event/{match_id}"
-
-    # try:
-    #     match_info_data, conn = await get_with_proxy(base_url + match_info_url, iproxy, conn, proxies)
-    # except Exception as e:
-    #     match_info_data, conn = await get_new_conn(base_url + match_info_url, iproxy, proxies)
-
-    match_info_data = match
-
-    try:
-        match_stats_all = match_stats_data["statistics"][0]["groups"]
+        match_stats_all = match_stats["statistics"][0]["groups"]
+        match_info_data = match_info["event"]
     except KeyError as e:
         print(f"Key error: {e}")
         return {}
@@ -70,7 +104,7 @@ async def extract_match_stats(match, date):
     player_a_wins = match_info_data["homeScore"]["current"]
     player_b_wins = match_info_data["awayScore"]["current"]
 
-    best_of = 3 if player_a_wins == 2 or player_b_wins == 2 else 5 if player_a_wins == 3 or player_b_wins == 3 else 0
+    best_of = 3 if player_a_wins == 2 or player_b_wins == 2 else 5 if player_a_wins == 3 or player_b_wins == 3 else ''
 
     stats = initialize_stats(match_info_data, tourney_level, date, best_of, round, minutes)
     hand_table = {"right-handed": 'R', "left-handed": 'L'}
@@ -112,7 +146,6 @@ def initialize_stats(match, tourney_level, date, best_of, round, minutes):
         "winner_rank": 0, "loser_rank": 0
     }
 
-
 def set_player_stats(stats, prefix, team, match, key, hand_table):
     stats[f"{prefix}_rank"] = team.get("ranking", '')
     stats[f"{prefix}_name"] = team.get("slug", "N/A")
@@ -140,11 +173,11 @@ def set_stats(stats, prefix, home_away, scores, stats_items):
     stats[prefix + "_bpSaved"] = stats_items[7].get(home_away + "Value", 0)
     stats[prefix + "_bpFaced"] = stats_items[7].get(home_away + "Total", 0)
 
-
 async def main():
-    global proxies
-    proxies = await read_proxies("scrapers/proxies/selected_proxies.csv")
-    await get_stats('m', datetime.now() - timedelta(days=0))
+    global proxy_url
+    global auth
+    proxy_url, auth = await read_proxies("scrapers/proxy_addresses/smartproxy.csv")
+    await get_stats('m', datetime.now() - timedelta(days=1))
 
 if __name__ == "__main__":
     asyncio.run(main())

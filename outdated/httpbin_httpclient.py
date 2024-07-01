@@ -32,7 +32,7 @@ def try_proxy(proxy):
         return None
 
 def main():
-    proxies = read_proxies("scrapers/proxies/selected_proxies.csv")
+    proxies = read_proxies("scrapers/proxy_addresses/selected_proxies.csv")
     for proxy in proxies:
         json_data = try_proxy(proxy)
         if json_data is not None:

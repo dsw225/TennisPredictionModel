@@ -8,9 +8,6 @@ async def extract_proxies(url):
         async with session.get(url) as response:
             text = await response.text()
             proxies = re.findall(r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}:\d+', text)
-            # json = await response.json()
-            # json = json["data"]
-            # proxies = [f"{entry['ip']}:{entry['port']}" for entry in json]
     return proxies
 
 async def test_proxy(session, proxy):
@@ -28,15 +25,13 @@ async def test_proxies(proxies, num_threads=10):
         responses = await asyncio.gather(*tasks)
         selected_proxies = [proxy for proxy in responses if proxy]
 
-    async with aiofiles.open('scrapers/proxies/selected_proxies.csv', 'w') as csvfile:
+    async with aiofiles.open('scrapers/proxy_addresses/selected_proxies.csv', 'w') as csvfile:
         for proxy in selected_proxies:
             await csvfile.write(f'{proxy}\n')
 
     return len(selected_proxies)
 
 async def main():
-    # proxies = await extract_proxies('https://proxylist.geonode.com/api/proxy-list?anonymityLevel=elite&speed=fast&limit=500&page=1&sort_by=speed&sort_type=asc')
-    # print(proxies)
     proxies = await extract_proxies('https://free-proxy-list.net/')
     successful_proxies_count = await test_proxies(proxies)
     print(f'Successful proxies: {successful_proxies_count}')

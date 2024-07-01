@@ -16,7 +16,7 @@ def read_proxies(file_path):
         print(f"Proxy file not found: {file_path}")
         return []
     
-proxies = read_proxies("scrapers/proxies/selected_proxies.csv")
+proxies = read_proxies("scrapers/proxy_addresses/selected_proxies.csv")
     
 def try_proxy(proxy, url):
     proxy_host, proxy_port = proxy.split(':')
