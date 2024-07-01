@@ -1,5 +1,5 @@
 :root {
-  --color-theme: #001522;
+  --color-theme: #000d14;
   --header-color: #B2A092;
   --text-dark: #000000;
   --text-light: #ffffff;
@@ -48,7 +48,7 @@ h1 {
 .landing {
   text-align: center;
   padding: 0 0 30px 0;
-  filter: drop-shadow(0px 0px 140px rgba(170, 170, 170, .9)) drop-shadow(0px 0px 30px rgba(255, 255, 255, 0.7));
+  filter: drop-shadow(0px 0px 140px rgba(170, 170, 170, .9)) drop-shadow(0px 0px 30px rgba(170, 170, 170, 0.7));
 }
 
 /* Media query for smaller screens */
