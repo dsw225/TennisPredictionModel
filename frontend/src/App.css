@@ -23,7 +23,7 @@
   font-family: Gotham;
   color: var(--text-light);
   max-width: 800px;
-  height: auto;
+  width: 90%; /* Adjust as needed */
   margin: 0 auto;
   padding: 10px;
   display: flex;
@@ -33,12 +33,27 @@
 }
 
 img {
+  max-width: 100%; /* Ensure the image scales with its container */
+  height: auto; /* Maintain aspect ratio */
   display: block;
   margin-left: auto;
   margin-right: auto;
+  filter: drop-shadow(5px 5px 5px rgb(0, 0, 0, .8));
+}
+
+h1 {
+  filter: drop-shadow(5px 5px 5px rgb(0, 0, 0, .8));
 }
 
 .landing {
   text-align: center;
   padding: 0 0 30px 0;
+  filter: drop-shadow(0px 0px 140px rgba(170, 170, 170, .9)) drop-shadow(0px 0px 30px rgba(255, 255, 255, 0.7));
+}
+
+/* Media query for smaller screens */
+@media (max-width: 800px) {
+  .body {
+    max-width: 90%; /* Adjust as needed */
+  }
 }
