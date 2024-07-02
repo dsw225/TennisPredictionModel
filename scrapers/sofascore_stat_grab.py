@@ -163,7 +163,7 @@ def initialize_stats(match, tourney_level, date, best_of, round, minutes):
         "tourney_id": match["tournament"]["uniqueTournament"]["id"], 
         "tourney_name": match["tournament"]["uniqueTournament"]["name"],
         "surface": match["groundType"],
-        "draw_size": 32,
+        "draw_size": "",
         "tourney_level": tourney_level,
         "tourney_date": date.strftime('%Y%m%d'),
         "match_num": match["id"],
