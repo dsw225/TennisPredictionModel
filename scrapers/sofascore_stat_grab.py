@@ -4,6 +4,7 @@ import aiohttp
 import aiofiles
 import pandas as pd
 import random
+import unicodedata
 
 base_url = "https://api.sofascore.com"
 headers = {'User-Agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36'}
@@ -62,7 +63,7 @@ async def get_year_to_date(mw):
     day_of_year = current_date.timetuple().tm_yday
     games_in_year = []
 
-    for day in range(day_of_year-10, day_of_year-13, -1):
+    for day in range(day_of_year-1, day_of_year-3, -1):
         # Calculate the date for each day in reverse order
         date = current_date - datetime.timedelta(days=day_of_year - day)
         matches = await get_stats(mw, date)
@@ -139,7 +140,7 @@ async def extract_match_stats(match_info, match_stats, date):
     player_a_wins = match_info_data["homeScore"]["current"]
     player_b_wins = match_info_data["awayScore"]["current"]
 
-    best_of = 3 if player_a_wins == 2 or player_b_wins == 2 else 5 if player_a_wins == 3 or player_b_wins == 3 else ''
+    best_of = 5 if player_a_wins == 3 or player_b_wins == 3 else 3 if player_a_wins == 2 or player_b_wins == 2 else ''
 
     stats = initialize_stats(match_info_data, tourney_level, date, best_of, round, minutes)
     hand_table = {"right-handed": 'R', "left-handed": 'L'}
@@ -183,7 +184,7 @@ def initialize_stats(match, tourney_level, date, best_of, round, minutes):
 
 def set_player_stats(stats, prefix, team, match, key, hand_table):
     stats[f"{prefix}_rank"] = team.get("ranking", '')
-    stats[f"{prefix}_name"] = team.get("slug", "N/A")
+    stats[f"{prefix}_name"] = get_full_name(team.get("name", "N/A"), team.get("slug", "N/A"))
     stats[f"{prefix}_id"] = team.get("id", "")
     stats[f"{prefix}_seed"] = match.get(key, '') if match.get(key, '').isdigit() else ''
     stats[f"{prefix}_entry"] = match.get(key, '') if not match.get(key, '').isdigit() else ''
@@ -207,6 +208,17 @@ def set_stats(stats, prefix, home_away, scores, stats_items):
     stats[prefix + "_SvGms"] = stats_items[6].get(home_away + "Value", 0)
     stats[prefix + "_bpSaved"] = stats_items[7].get(home_away + "Value", 0)
     stats[prefix + "_bpFaced"] = stats_items[7].get(home_away + "Total", 0)
+
+def get_full_name(name, slug):
+    if slug == "N/A" or name == "N/A":
+        return slug
+
+    # Replace special characters in slug with regular characters
+    name = ''.join((c for c in unicodedata.normalize('NFD', name) if unicodedata.category(c) != 'Mn'))
+
+    parts = name.split()
+    full_name = slug.split('-')[-1].capitalize() + ' ' + ' '.join(parts[:-1])
+    return full_name
 
 async def main():
     global proxy_url
