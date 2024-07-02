@@ -5,6 +5,7 @@ import aiofiles
 import pandas as pd
 import random
 import unicodedata
+import signal
 
 base_url = "https://api.sofascore.com"
 headers = {'User-Agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36'}
@@ -14,6 +15,9 @@ pd_headers = ['tourney_id','tourney_name','surface','draw_size','tourney_level',
               'loser_hand','loser_ht','loser_ioc','loser_age','score','w1','w2','w3','w4','w5','w_ace',
               'w_df','w_svpt','w_1stIn','w_1stWon','w_2ndWon','w_SvGms','w_bpSaved','w_bpFaced','l1','l2','l3','l4','l5','l_ace','l_df',
               'l_svpt','l_1stIn','l_1stWon','l_2ndWon','l_SvGms','l_bpSaved','l_bpFaced','winner_rank','winner_rank_points','loser_rank','loser_rank_points']
+
+# Global variable to control program exit
+exit_program = False
 
 async def read_proxies(file_path):
     try:
@@ -36,7 +40,6 @@ async def read_proxies(file_path):
 async def fetch(session, url, proxy_url=None, auth=None):
     retries = 3  # Number of retries
     backoff_factor = 2  # Exponential backoff factor
-    headers = {'User-Agent': 'Your User Agent'}
     while retries > 0:
         try:
             if proxy_url:
@@ -62,17 +65,33 @@ async def get_year_to_date(mw):
     current_date = datetime.date.today()
     day_of_year = current_date.timetuple().tm_yday
     games_in_year = []
-
-    for day in range(day_of_year-1, day_of_year-3, -1):
-        # Calculate the date for each day in reverse order
-        date = current_date - datetime.timedelta(days=day_of_year - day)
-        matches = await get_stats(mw, date)
-        games_in_year.extend(matches)
+    try:
+        for day in range(day_of_year-1, 0, -1):
+            # Calculate the date for each day in reverse order
+            date = current_date - datetime.timedelta(days=day_of_year - day)
+            matches = await get_stats(mw, date)
+            games_in_year.extend(matches)
+            global exit_program
+            if exit_program:  # Check if keyboard interrupt thrown
+                raise Exception("Keyboard interruption")
+            
+        print("Completed Run Successfully")
+    except Exception as e:
+        print(f"Exception: {e}, saving data")
+        pass
 
     all_games = pd.DataFrame(games_in_year, columns=pd_headers)
     all_games = all_games.sort_values(by='tourney_date').reset_index(drop=True)
     return all_games
 
+def save_data_to_csv(mw, data):
+    prefix_mapping = {
+        'm': 'atp_matches_', 'w': 'wta_matches_', 'mc': 'atp_matches_qual_chall_', 'wc': 'wta_matches_qual_chall_', 'mi': 'itf_men_matches_', 'wi': 'itf_women_matches_'
+    }
+    prefix = prefix_mapping.get(mw, '')
+    filename = f'csvs/Generated/{prefix}{datetime.date.today().year}.csv'
+    data.to_csv(filename, index=False)
+    print(f"Data saved to {filename}")
 
 async def get_stats(mw, date):
     prefix_mapping = {
@@ -99,6 +118,10 @@ async def get_stats(mw, date):
             match_stats_url = f"/api/v1/event/{match_id}/statistics"
             match_info_url = f"/api/v1/event/{match_id}"
 
+            global exit_program
+            if exit_program:  # Check if keyboard interrupt thrown
+                raise Exception("Keyboard interruption")
+
             match_stats = await fetch(session, base_url+match_stats_url, proxy_url, auth)
             if not match_stats:
                 print(f"No statistics found for match ID {match_id}. Skipping to next match.")
@@ -109,9 +132,6 @@ async def get_stats(mw, date):
                 print(f"Failed to fetch event info for match ID {match_id}.")
                 continue
 
-            # home_team = match.get("homeTeam", {}).get("slug", "N/A")
-            # away_team = match.get("awayTeam", {}).get("slug", "N/A")
-            # print(f"Match: {home_team} vs. {away_team}")
             match_stats = await extract_match_stats(match_info, match_stats, date)
             date_stats.append(match_stats)
 
@@ -129,46 +149,46 @@ async def extract_match_stats(match_info, match_stats, date):
         return {}
 
     game_level = {2000: 'G', 1000: 'M'}
-    tourney_level = game_level.get(match_info_data["tournament"]["uniqueTournament"].get("tennisPoints", 0), 'A')
+    tourney_level = game_level.get(match_info_data.get("tournament", {}).get("uniqueTournament", {}).get("tennisPoints", 0), 'A')
 
-    elapsed_time = datetime.datetime.fromtimestamp(match_info_data["changes"]["changeTimestamp"]) - datetime.datetime.fromtimestamp(match_info_data["time"]["currentPeriodStartTimestamp"])
+    elapsed_time = datetime.datetime.fromtimestamp(match_info_data.get("changes", {}).get("changeTimestamp",0)) - datetime.datetime.fromtimestamp(match_info_data.get("time", {}).get("currentPeriodStartTimestamp", 0))
     minutes = int(elapsed_time.total_seconds() // 60)
 
     round_level = {29: 'F', 28: 'SF', 27: 'QF', 5: 'R16', 6: 'R32', 32: 'R64', 64: 'R128', 1: 'RR'}
-    round = round_level.get(match_info_data.get("roundInfo", {}).get("round", 0), 'RR')
+    round_ = round_level.get(match_info_data.get("roundInfo", {}).get("round", 0), 'RR')
 
-    player_a_wins = match_info_data["homeScore"]["current"]
-    player_b_wins = match_info_data["awayScore"]["current"]
+    player_a_wins = match_info_data.get("homeScore", {}).get("current", 0)
+    player_b_wins = match_info_data.get("awayScore", {}).get("current", 0)
 
     best_of = 5 if player_a_wins == 3 or player_b_wins == 3 else 3 if player_a_wins == 2 or player_b_wins == 2 else ''
 
-    stats = initialize_stats(match_info_data, tourney_level, date, best_of, round, minutes)
+    stats = initialize_stats(match_info_data, tourney_level, date, best_of, round_, minutes)
     hand_table = {"right-handed": 'R', "left-handed": 'L'}
     
-    if match_info_data['winnerCode'] == 1:
-        set_stats(stats, "w", "home", match_info_data["homeScore"], match_stats_all[0]["statisticsItems"])
-        set_stats(stats, "l", "away", match_info_data["awayScore"], match_stats_all[0]["statisticsItems"])
-        set_player_stats(stats, "winner", match_info_data["homeTeam"], match_info_data, "homeTeamSeed", hand_table)
-        set_player_stats(stats, "loser", match_info_data["awayTeam"], match_info_data, "awayTeamSeed", hand_table)
+    if match_info_data.get('winnerCode') == 1:
+        set_stats(stats, "w", "home", match_info_data.get("homeScore", {}), match_stats_all[0].get("statisticsItems", {}))
+        set_stats(stats, "l", "away", match_info_data.get("awayScore", {}), match_stats_all[0].get("statisticsItems", {}))
+        set_player_stats(stats, "winner", match_info_data.get("homeTeam", {}), match_info_data, "homeTeamSeed", hand_table)
+        set_player_stats(stats, "loser", match_info_data.get("awayTeam", {}), match_info_data, "awayTeamSeed", hand_table)
     else:
-        set_stats(stats, "w", "away", match_info_data["awayScore"], match_stats_all[0]["statisticsItems"])
-        set_stats(stats, "l", "home", match_info_data["homeScore"], match_stats_all[0]["statisticsItems"])
-        set_player_stats(stats, "winner", match_info_data["awayTeam"], match_info_data, "awayTeamSeed", hand_table)
-        set_player_stats(stats, "loser", match_info_data["homeTeam"], match_info_data, "homeTeamSeed", hand_table)
+        set_stats(stats, "w", "away", match_info_data.get("awayScore", {}), match_stats_all[0].get("statisticsItems", {}))
+        set_stats(stats, "l", "home", match_info_data.get("homeScore", {}), match_stats_all[0].get("statisticsItems", {}))
+        set_player_stats(stats, "winner", match_info_data.get("awayTeam", {}), match_info_data, "awayTeamSeed", hand_table)
+        set_player_stats(stats, "loser", match_info_data.get("homeTeam", {}), match_info_data, "homeTeamSeed", hand_table)
 
     return stats
 
-def initialize_stats(match, tourney_level, date, best_of, round, minutes):
+def initialize_stats(match, tourney_level, date, best_of, round_, minutes):
     return {
-        "tourney_id": match["tournament"]["uniqueTournament"]["id"], 
-        "tourney_name": match["tournament"]["uniqueTournament"]["name"],
-        "surface": match["groundType"],
+        "tourney_id": match.get("tournament", {}).get("uniqueTournament", {}).get("id", 0),
+        "tourney_name": match.get("tournament", {}).get("uniqueTournament", {}).get("name", "N/A"),
+        "surface": match.get("groundType", "Unknown"),
         "draw_size": "",
         "tourney_level": tourney_level,
         "tourney_date": date.strftime('%Y%m%d'),
-        "match_num": match["id"],
+        "match_num": match.get("id", 0),
         "best_of": best_of,
-        "round": round,
+        "round": round_,
         "minutes": minutes,
         "winner_id": "", "winner_seed": "", "winner_entry": "", "winner_name": "",
         "winner_hand": "", "winner_ht": "", "winner_ioc": "", "winner_age": "",
@@ -225,10 +245,15 @@ async def main():
     global auth
     proxy_url, auth = await read_proxies("scrapers/proxy_addresses/smartproxy.csv")
 
-    # await get_stats('m', datetime.datetime.now() - datetime.timedelta(days=2))
-    data = await get_year_to_date('m')
-    data.to_csv('test4compare.csv', index=False)
-    print("Completed Run Successfully")
+    mw = 'm'
+
+    games_data = await get_year_to_date(mw)
+    save_data_to_csv(mw, games_data)
+
+def handle_keyboard_interrupt(signal, frame):
+    global exit_program
+    exit_program = True
 
 if __name__ == "__main__":
+    signal.signal(signal.SIGINT, handle_keyboard_interrupt)
     asyncio.run(main())
