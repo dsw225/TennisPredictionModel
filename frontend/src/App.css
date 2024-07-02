@@ -16,22 +16,21 @@
   background: var(--color-theme);
   display: flex;
   justify-content: center;
-  align-items: center;
-  padding: 20px; /* Ensure padding for smaller screens */
+  align-items: center; /* Ensure padding for smaller screens */
 }
 
 .body {
   font-family: Gotham;
   color: var(--text-light);
   max-width: 800px;
-  width: 100%; /* Ensure it takes the full width */
+  width: 80%; /* Ensure it takes the full width */
   margin: 0 auto;
   padding: 10px;
   display: flex;
   justify-content: center;
   align-items: center;
   flex-direction: column;
-  text-align: center; /* Ensure text is centered */
+  text-align: center;
 }
 
 img {
@@ -44,17 +43,18 @@ img {
 
 h1 {
   filter: drop-shadow(5px 5px 5px rgb(0, 0, 0, .8));
+  margin-bottom: 0;
 }
 
 .landing {
   padding-bottom: 30px;
-  filter: drop-shadow(0px 0px 140px rgba(170, 170, 170, .9)) drop-shadow(0px 0px 30px rgba(170, 170, 170, 0.7));
+  filter: drop-shadow(0px 0px 400px rgba(170, 170, 170, 1)) drop-shadow(0px 0px 30px rgba(170, 170, 170, 0.7));
 }
 
 /* Media query for smaller screens */
 @media (max-width: 800px) {
   .body {
-    max-width: 100%; /* Ensure it takes the full width on smaller screens */
+    max-width: 80%; /* Ensure it takes the full width on smaller screens */
     padding: 20px; /* Adjust padding for better spacing */
   }
 
@@ -68,6 +68,6 @@ h1 {
   }
 
   h1 {
-    font-size: 1.5em; /* Adjust font size for smaller screens */
+    font-size: 3vw; /* Adjust font size for smaller screens */
   }
 }
