@@ -3,7 +3,6 @@
   --header-color: #B2A092;
   --text-dark: #000000;
   --text-light: #ffffff;
-  --pages-width: calc(90vh);
 }
 
 @font-face {
@@ -11,63 +10,51 @@
   src: url(/public/fonts/Gotham/Gotham-Book.otf);
 }
 
-.full {
-  min-height: 100vh;
-  background: var(--color-theme);
-  display: flex;
-  justify-content: center;
-  align-items: center; /* Ensure padding for smaller screens */
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  font-family: Gotham, sans-serif;
 }
 
-.body {
-  font-family: Gotham;
-  color: var(--text-light);
-  max-width: 800px;
-  width: 80%; /* Ensure it takes the full width */
-  margin: 0 auto;
-  padding: 10px;
+body {
   display: flex;
   justify-content: center;
   align-items: center;
-  flex-direction: column;
+  background: var(--color-theme);
+  color: var(--text-light);
+}
+
+.container {
+  margin: 0 auto;
+  max-width: 800px;
+  width: 80%;
   text-align: center;
 }
 
 img {
-  max-width: 100%; /* Ensure the image scales with its container */
-  height: auto; /* Maintain aspect ratio */
+  max-width: 100%;
+  height: auto;
   display: block;
-  margin: 0 auto; /* Center the image */
-  filter: drop-shadow(5px 5px 5px rgb(0, 0, 0, .8));
+  margin: 0 auto;
+  filter: drop-shadow(5px 5px 5px rgba(0, 0, 0, 0.8));
 }
 
 h1 {
-  filter: drop-shadow(5px 5px 5px rgb(0, 0, 0, .8));
-  margin-bottom: 0;
+  filter: drop-shadow(5px 5px 5px rgba(0, 0, 0, 0.8));
+  margin-bottom: 0px;
+  margin-top: 2vh;
+  font-size: 4vw;
 }
 
 .landing {
-  padding-bottom: 30px;
-  filter: drop-shadow(0px 0px 400px rgba(170, 170, 170, 1)) drop-shadow(0px 0px 30px rgba(170, 170, 170, 0.7));
+  padding-bottom: 2vh;
+  filter: drop-shadow(0px 0px 10vw rgb(53, 81, 117))  drop-shadow(0px 0px 3vh rgb(97, 97, 97));
 }
 
-/* Media query for smaller screens */
-@media (max-width: 800px) {
-  .body {
-    max-width: 80%; /* Ensure it takes the full width on smaller screens */
-    padding: 20px; /* Adjust padding for better spacing */
-  }
-
-  .landing {
-    padding-bottom: 20px; /* Adjust padding for better spacing */
-  }
-
-  img {
-    max-width: 100%; /* Ensure the image scales with its container */
-    height: auto; /* Maintain aspect ratio */
-  }
-
-  h1 {
-    font-size: 3vw; /* Adjust font size for smaller screens */
+@media only screen and (min-width: 768px) {
+  h1{
+    font-size: 2em;
   }
 }
