@@ -90,7 +90,7 @@ def career_stats(date, mw):
             pass
     players_elo['last_date'] = pd.to_datetime(players_elo['last_date'])
     players_elo = players_elo[~(
-                (players_elo['matches_played'] < 10) # |
+                (players_elo['matches_played'] < 5) # |
                 #(players_elo['last_date'] < dateend - timedelta(days=200))
             )]
     players_elo = players_elo.sort_values(by='elo_rating', ascending=False)
@@ -369,4 +369,4 @@ def pressure_rating(bp_faced, bp_saved, bp_faced_oppo, bp_saved_oppo, tb_won, tb
     return bp_saved_pct + bp_converted_pct + tb_won_pct + deciding_sets_won_winner_pct
 
 
-career_stats('20150520','m')
+career_stats('20240701','w')

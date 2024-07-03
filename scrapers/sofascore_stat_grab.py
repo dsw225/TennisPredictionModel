@@ -15,6 +15,7 @@ pd_headers = ['tourney_id','tourney_name','surface','draw_size','tourney_level',
               'loser_hand','loser_ht','loser_ioc','loser_age','score','w1','w2','w3','w4','w5','w_ace',
               'w_df','w_svpt','w_1stIn','w_1stWon','w_2ndWon','w_SvGms','w_bpSaved','w_bpFaced','l1','l2','l3','l4','l5','l_ace','l_df',
               'l_svpt','l_1stIn','l_1stWon','l_2ndWon','l_SvGms','l_bpSaved','l_bpFaced','winner_rank','winner_rank_points','loser_rank','loser_rank_points']
+matches_stored = []
 
 # Global variable to control program exit
 exit_program = False
@@ -66,7 +67,7 @@ async def get_year_to_date(mw):
     day_of_year = current_date.timetuple().tm_yday
     games_in_year = []
     try:
-        for day in range(day_of_year-1, 0, -1):
+        for day in range(1, day_of_year, 1):
             # Calculate the date for each day in reverse order
             date = current_date - datetime.timedelta(days=day_of_year - day)
             matches = await get_stats(mw, date)
@@ -121,6 +122,12 @@ async def get_stats(mw, date):
             global exit_program
             if exit_program:  # Check if keyboard interrupt thrown
                 raise Exception("Keyboard interruption")
+            
+            if(match_id in matches_stored):
+                print(f"Match ID {match_id} already stored")
+                continue
+
+            matches_stored.append(match_id)
 
             match_stats = await fetch(session, base_url+match_stats_url, proxy_url, auth)
             if not match_stats:
@@ -146,6 +153,10 @@ async def extract_match_stats(match_info, match_stats, date):
         match_info_data = match_info["event"]
     except KeyError as e:
         print(f"Key error: {e}")
+        return {}
+    
+    if match_info_data.get('status', {}).get('type', '') == 'canceled':
+        print(f"Canceled match {match_info_data.get('id', '')}")
         return {}
 
     game_level = {2000: 'G', 1000: 'M'}
@@ -219,15 +230,15 @@ def set_stats(stats, prefix, home_away, scores, stats_items):
     stats[prefix + "3"] = scores.get("period3", 0)
     stats[prefix + "4"] = scores.get("period4", 0)
     stats[prefix + "5"] = scores.get("period5", 0)
-    stats[prefix + "_ace"] = stats_items[0].get(home_away + "Value", 0)
-    stats[prefix + "_df"] = stats_items[1].get(home_away + "Value", 0)
-    stats[prefix + "_svpt"] = stats_items[2].get(home_away + "Total", 0)
-    stats[prefix + "_1stIn"] = stats_items[2].get(home_away + "Value", 0)
-    stats[prefix + "_1stWon"] = stats_items[4].get(home_away + "Value", 0)
-    stats[prefix + "_2ndWon"] = stats_items[5].get(home_away + "Value", 0)
-    stats[prefix + "_SvGms"] = stats_items[6].get(home_away + "Value", 0)
-    stats[prefix + "_bpSaved"] = stats_items[7].get(home_away + "Value", 0)
-    stats[prefix + "_bpFaced"] = stats_items[7].get(home_away + "Total", 0)
+    stats[prefix + "_ace"] = stats_items[0].get(home_away + "Value", 0) if len(stats_items) >= 1 else ''
+    stats[prefix + "_df"] = stats_items[1].get(home_away + "Value", 0) if len(stats_items) >= 2 else ''
+    stats[prefix + "_svpt"] = stats_items[2].get(home_away + "Total", 0) if len(stats_items) >= 3 else ''
+    stats[prefix + "_1stIn"] = stats_items[2].get(home_away + "Value", 0) if len(stats_items) >= 3 else ''
+    stats[prefix + "_1stWon"] = stats_items[4].get(home_away + "Value", 0) if len(stats_items) >= 5 else ''
+    stats[prefix + "_2ndWon"] = stats_items[5].get(home_away + "Value", 0) if len(stats_items) >= 6 else ''
+    stats[prefix + "_SvGms"] = stats_items[6].get(home_away + "Value", 0) if len(stats_items) >= 7 else ''
+    stats[prefix + "_bpSaved"] = stats_items[7].get(home_away + "Value", 0) if len(stats_items) >= 8 else ''
+    stats[prefix + "_bpFaced"] = stats_items[7].get(home_away + "Total", 0) if len(stats_items) >= 8 else ''
 
 def get_full_name(name, slug):
     if slug == "N/A" or name == "N/A":
@@ -245,7 +256,7 @@ async def main():
     global auth
     proxy_url, auth = await read_proxies("scrapers/proxy_addresses/smartproxy.csv")
 
-    mw = 'm'
+    mw = 'w'
 
     games_data = await get_year_to_date(mw)
     save_data_to_csv(mw, games_data)
