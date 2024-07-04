@@ -1,6 +1,6 @@
-[submodule "csvs/WTA (Womens)/tennis_wta"]
-	path = csvs/WTA (Womens)/tennis_wta
+[submodule "data/csvs/WTA (Womens)/tennis_wta"]
+	path = data/csvs/WTA (Womens)/tennis_wta
 	url = https://github.com/JeffSackmann/tennis_wta
-[submodule "csvs/ATP (Mens)/tennis_atp"]
-	path = csvs/ATP (Mens)/tennis_atp
+[submodule "data/csvs/ATP (Mens)/tennis_atp"]
+	path = data/csvs/ATP (Mens)/tennis_atp
 	url = https://github.com/JeffSackmann/tennis_atp
