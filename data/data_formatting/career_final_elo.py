@@ -15,7 +15,7 @@ TB_K_FACTOR = 3.275
 
 def career_stats(date, mw):
     dateend = datetime.strptime(date, "%Y%m%d")
-    datestart = datetime(2022, 1, 1)
+    datestart = datetime(2023, 1, 1)
     if mw == 'm':   
         prefix = 'atp'
         input_path = 'csvs/ATP (Mens)/tennis_atp/'
@@ -93,7 +93,7 @@ def career_stats(date, mw):
                 (players_elo['matches_played'] < 5) # |
                 #(players_elo['last_date'] < dateend - timedelta(days=200))
             )]
-    players_elo = players_elo.sort_values(by='elo_rating', ascending=False)
+    players_elo = players_elo.sort_values(by='grass_elo_rating', ascending=False)
     players_elo.to_csv('csvs/Generated/' + output_path, index=False)
     print("Done")
 
@@ -369,4 +369,4 @@ def pressure_rating(bp_faced, bp_saved, bp_faced_oppo, bp_saved_oppo, tb_won, tb
     return bp_saved_pct + bp_converted_pct + tb_won_pct + deciding_sets_won_winner_pct
 
 
-career_stats('20240703','m')
+career_stats('20240707','w')

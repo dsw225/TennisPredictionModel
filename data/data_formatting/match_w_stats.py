@@ -5,7 +5,7 @@ import csv
 from random import random
 from datetime import datetime
 
-def create_matchup(match, mw, career_stats):
+async def create_matchup(match, mw, career_stats):
     winner = match['winner_name']
     loser = match['loser_name']
     whand = match['winner_hand']
@@ -61,6 +61,10 @@ def create_matchup(match, mw, career_stats):
         ]
 
 
+
+
+
+
 def data_set_creator(yr, mw):
     if mw == 'm':   
         prefix = 'atp'
@@ -106,6 +110,3 @@ def data_set_creator(yr, mw):
 
     player_stats_df.to_csv('csvs/Generated/' + output_path, index=False)
     print("Done")
-
-#Test
-data_set_creator(2022, 'm')

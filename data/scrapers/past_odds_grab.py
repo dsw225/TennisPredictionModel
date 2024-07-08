@@ -1,8 +1,8 @@
 import requests
 import os
 
-mw = 'w'            ## 'm' = men, 'w' = women
-yr = 2023        ## year to grab
+mw = 'm'            ## 'm' = men, 'w' = women
+yr = 2024        ## year to grab
 
 if mw == 'm':   
     url = f"http://www.tennis-data.co.uk/{yr}/{yr}.xlsx"

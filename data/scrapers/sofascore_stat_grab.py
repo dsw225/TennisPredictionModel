@@ -256,7 +256,7 @@ async def main():
     global auth
     proxy_url, auth = await read_proxies("scrapers/proxy_addresses/smartproxy.csv")
 
-    mw = 'm'
+    mw = 'w'
 
     games_data = await get_year_to_date(mw)
     save_data_to_csv(mw, games_data)

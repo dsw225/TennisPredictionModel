@@ -1,10 +1,6 @@
 import pandas as pd
 from datetime import datetime
 
-## Original file provided by Jeff Sackman Github 2021
-## https://github.com/JeffSackmann/tennis_atp/blob/master/examples/query_player_season_totals.py
-## Altered for training model by Dan Warnick 2024
-
 def add_c_stats(row, player_stats):
     for k in player_stats:
         if k[0] == row[0]:
