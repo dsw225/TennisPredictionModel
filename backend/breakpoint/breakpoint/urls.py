@@ -20,5 +20,6 @@ from render.views import *
 
 urlpatterns = [
     re_path('admin/', admin.site.urls),
-    re_path('', TennisMatchView.as_view(), name='xxx'),
+    re_path('tennismatch/', TennisMatchView.as_view(), name='xxx'),
+    re_path('player/', PlayerView.as_view(), name='xxx'),
 ]

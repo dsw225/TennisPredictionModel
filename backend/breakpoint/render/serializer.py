@@ -8,5 +8,5 @@ class TennisMatchSerializer(serializers.ModelSerializer):
 
 class PlayerViewSerializer(serializers.ModelSerializer):
     class Meta:
-        model = PlayerView
+        model = Player
         fields = '__all__'

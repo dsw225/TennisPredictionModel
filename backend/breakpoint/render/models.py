@@ -61,7 +61,7 @@ class TennisMatch(models.Model):
     winner_rank = models.IntegerField(null=True, blank=True)
     loser_rank = models.IntegerField(null=True, blank=True)
 
-class PlayerView(models.Model):
+class Player(models.Model):
     #player_id,name_first,name_last,hand,dob,ioc,height,wikidata_id
     player_id = models.IntegerField(max_length=50)
     player_name = models.CharField(max_length=100)

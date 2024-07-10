@@ -1,7 +1,7 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from .models import TennisMatch, PlayerView
+from .models import TennisMatch, Player
 from . serializer import TennisMatchSerializer, PlayerViewSerializer
 
 class TennisMatchView(APIView):
@@ -82,11 +82,11 @@ class TennisMatchView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class PlayerViewView(APIView):
+class PlayerView(APIView):
     serializer_class = PlayerViewSerializer
 
     def get(self, request):
-        players = PlayerView.objects.all()
+        players = Player.objects.all()
         output = [
             {
                 "player_id": player.player_id,
