@@ -5,6 +5,10 @@ import io
 import aiofiles
 import aiohttp
 import asyncio
+import os
+import django
+from django.conf import settings
+from backend.breakpoint.render.models import TennisMatch
 
 # https://stackoverflow.com/questions/76391586/async-read-csv-in-pandas
 async def fetch_csv(path):
@@ -85,13 +89,23 @@ async def convert_format(start, end, mw):
 
     matches_df = matches_df[pd_headers]
     matches_df = matches_df.sort_values(by='tourney_date').reset_index(drop=True)
-    output_path = f'csvs/Generated/{prefix}_matches_{datestart.year}_{dateend.year}.csv'
 
-    # print(matches_df)
+    for index, row in matches_df.iterrows():
+        match_data = row.to_dict()
+        match_data = {k: (v if pd.notna(v) else None) for k, v in match_data.items()}
+        match_data = {k: (v if v != '' else None) for k, v in match_data.items()}
+        
+        TennisMatch.objects.update_or_create(
+            match_num=match_data['match_num'],
+            defaults=match_data
+        )
+    # output_path = f'csvs/Generated/{prefix}_matches_{datestart.year}_{dateend.year}.csv'
 
-    csv_data = matches_df.to_csv(index=False)  # Convert DataFrame to CSV string
-    async with aiofiles.open(output_path, 'w') as f:
-        await f.write(csv_data)
+    # # print(matches_df)
+
+    # csv_data = matches_df.to_csv(index=False)  # Convert DataFrame to CSV string
+    # async with aiofiles.open(output_path, 'w') as f:
+    #     await f.write(csv_data)
 
 # Example usage:
 asyncio.run(convert_format('19900101', '20231231', 'm'))
