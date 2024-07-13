@@ -8,6 +8,12 @@ import asyncio
 import os
 import django
 from django.conf import settings
+import os
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.breakpoint.breakpoint.settings')  # Adjust 'your_project.settings' to your Django project's settings module
+
+import django
+django.setup()
+
 from backend.breakpoint.render.models import TennisMatch
 
 # https://stackoverflow.com/questions/76391586/async-read-csv-in-pandas
@@ -62,10 +68,10 @@ async def convert_format(start, end, mw):
 
     if mw == 'm':   
         prefix = 'atp'
-        input_path = 'csvs/ATP (Mens)/tennis_atp/atp_matches_'
+        input_path = 'data/csvs/ATP (Mens)/tennis_atp/atp_matches_'
     else:
         prefix = 'wta'
-        input_path = 'csvs/WTA (Womens)/tennis_wta/wta_matches_'
+        input_path = 'data/csvs/WTA (Womens)/tennis_wta/wta_matches_'
 
     tasks = []
     for yr in range(datestart.year, dateend.year + 1):
@@ -90,22 +96,95 @@ async def convert_format(start, end, mw):
     matches_df = matches_df[pd_headers]
     matches_df = matches_df.sort_values(by='tourney_date').reset_index(drop=True)
 
-    for index, row in matches_df.iterrows():
-        match_data = row.to_dict()
-        match_data = {k: (v if pd.notna(v) else None) for k, v in match_data.items()}
-        match_data = {k: (v if v != '' else None) for k, v in match_data.items()}
+    field_mapping = {
+        'tourney_id': 'tourney_id',
+        'tourney_name': 'tourney_name',
+        'surface': 'surface',
+        'draw_size': 'draw_size',
+        'tourney_level': 'tourney_level',
+        'tourney_date': 'tourney_date',
+        'match_num': 'match_num',
+        'best_of': 'best_of',
+        'round': 'round',
+        'minutes': 'minutes',
+        'winner_id': 'winner_id',
+        'winner_seed': 'winner_seed',
+        'winner_entry': 'winner_entry',
+        'winner_name': 'winner_name',
+        'winner_hand': 'winner_hand',
+        'winner_ht': 'winner_ht',
+        'winner_ioc': 'winner_ioc',
+        'winner_age': 'winner_age',
+        'loser_id': 'loser_id',
+        'loser_seed': 'loser_seed',
+        'loser_entry': 'loser_entry',
+        'loser_name': 'loser_name',
+        'loser_hand': 'loser_hand',
+        'loser_ht': 'loser_ht',
+        'loser_ioc': 'loser_ioc',
+        'loser_age': 'loser_age',
+        'w1': 'w1',
+        'w2': 'w2',
+        'w3': 'w3',
+        'w4': 'w4',
+        'w5': 'w5',
+        'w_ace': 'w_ace',
+        'w_df': 'w_df',
+        'w_svpt': 'w_svpt',
+        'w_1stIn': 'w_1stIn',
+        'w_1stWon': 'w_1stWon',
+        'w_2ndWon': 'w_2ndWon',
+        'w_SvGms': 'w_SvGms',
+        'w_bpSaved': 'w_bpSaved',
+        'w_bpFaced': 'w_bpFaced',
+        'l1': 'l1',
+        'l2': 'l2',
+        'l3': 'l3',
+        'l4': 'l4',
+        'l5': 'l5',
+        'l_ace': 'l_ace',
+        'l_df': 'l_df',
+        'l_svpt': 'l_svpt',
+        'l_1stIn': 'l_1stIn',
+        'l_1stWon': 'l_1stWon',
+        'l_2ndWon': 'l_2ndWon',
+        'l_SvGms': 'l_SvGms',
+        'l_bpSaved': 'l_bpSaved',
+        'l_bpFaced': 'l_bpFaced',
+        'winner_rank': 'winner_rank',
+        'loser_rank': 'loser_rank'
+    }
+    
+    # Define default values for extra fields
+    default_values = {
+        'winner_odds': None,
+        'loser_odds': None
+    }
+    
+    # Insert the DataFrame into the model
+    insert_dataframe_into_model(matches_df, field_mapping, default_values)
+
+
+def insert_dataframe_into_model(df: pd.DataFrame, field_mapping: dict, default_values: dict = None):
+    if default_values is None:
+        default_values = {}
+
+    model_instances = []
+    for _, row in df.iterrows():
+        # Create a dictionary to hold the mapped field values
+        mapped_data = {model_field: row[df_column] for df_column, model_field in field_mapping.items() if df_column in row}
         
-        TennisMatch.objects.update_or_create(
-            match_num=match_data['match_num'],
-            defaults=match_data
-        )
-    # output_path = f'csvs/Generated/{prefix}_matches_{datestart.year}_{dateend.year}.csv'
-
-    # # print(matches_df)
-
-    # csv_data = matches_df.to_csv(index=False)  # Convert DataFrame to CSV string
-    # async with aiofiles.open(output_path, 'w') as f:
-    #     await f.write(csv_data)
+        # Add default values for fields not in the DataFrame
+        for field, value in default_values.items():
+            if field not in mapped_data:
+                mapped_data[field] = value
+        
+        # Create the model instance with the mapped data
+        model_instance = TennisMatch(**mapped_data)
+        model_instances.append(model_instance)
+    
+    # Bulk create model instances
+    TennisMatch.objects.bulk_create(model_instances)
 
 # Example usage:
 asyncio.run(convert_format('19900101', '20231231', 'm'))
