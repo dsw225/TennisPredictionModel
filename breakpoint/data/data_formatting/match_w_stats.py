@@ -1,4 +1,4 @@
-import rolling_stats
+import breakpoint.rolling_stats as rolling_stats
 import career_stats
 import pandas as pd
 import csv

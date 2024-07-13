@@ -2,7 +2,7 @@ from django.db import models
 
 # Create your models here.
 class TennisMatch(models.Model):
-    tourney_id = models.IntegerField(max_length=50)
+    tourney_id = models.CharField(max_length=50)
     tourney_name = models.CharField(max_length=100)
     surface = models.CharField(max_length=20)
     draw_size = models.IntegerField()
@@ -16,7 +16,7 @@ class TennisMatch(models.Model):
     winner_seed = models.IntegerField(null=True, blank=True)
     winner_entry = models.CharField(max_length=10, null=True, blank=True)
     winner_name = models.CharField(max_length=100)
-    winner_hand = models.CharField(max_length=1)
+    winner_hand = models.CharField(max_length=1, null=True, blank=True)
     winner_ht = models.IntegerField(null=True, blank=True)
     winner_ioc = models.CharField(max_length=3)
     winner_age = models.IntegerField(null=True, blank=True)
@@ -24,7 +24,7 @@ class TennisMatch(models.Model):
     loser_seed = models.IntegerField(null=True, blank=True)
     loser_entry = models.CharField(max_length=10, null=True, blank=True)
     loser_name = models.CharField(max_length=100)
-    loser_hand = models.CharField(max_length=1)
+    loser_hand = models.CharField(max_length=1, null=True, blank=True)
     loser_ht = models.IntegerField(null=True, blank=True)
     loser_ioc = models.CharField(max_length=3)
     loser_age = models.IntegerField(null=True, blank=True)
@@ -66,7 +66,7 @@ class Player(models.Model):
     player_id = models.IntegerField(max_length=50)
     player_name = models.CharField(max_length=100)
     player_slug = models.CharField(max_length=100)
-    player_hand = models.CharField(max_length=1)
+    player_hand = models.CharField(max_length=1, null=True, blank=True)
     player_dob = models.DateField()
     player_ioc = models.CharField(max_length=3)
     player_ht = models.IntegerField(null=True, blank=True)

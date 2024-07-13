@@ -34,6 +34,7 @@ if RENDER_EXTERNAL_HOSTNAME:
 # Application definition
 
 INSTALLED_APPS = [
+    # 'adrf', # https://github.com/em1208/adrf
     'render.apps.RenderConfig',
     'django.contrib.admin',
     'django.contrib.auth',
