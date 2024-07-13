@@ -210,4 +210,4 @@ async def insert_dataframe_into_model(df: pd.DataFrame, field_mapping: dict, def
     # Bulk create model instances
     # TennisMatch.objects.acreate(model_instances)
 
-asyncio.run(convert_format('19900101', '20231231', 'm'))
+asyncio.run(convert_format('19900101', '20221231', 'm'))

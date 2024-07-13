@@ -127,7 +127,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **kwargs):
         start_date = '19900101'
-        end_date = '20231231'
+        end_date = '20221231'
         match_type = 'm'  # 'm' for men's ATP matches, 'w' for women's WTA matches
 
         asyncio.run(self.convert_format(start_date, end_date, match_type))
