@@ -218,8 +218,8 @@ def get_player_odds(match_odds):
         loser_odds = match_odds[0].get("fractionalValue", '').split('/')
         winner_odds = match_odds[1].get("fractionalValue", '').split('/')
 
-    computedWinner = (float(winner_odds[0]) / float(winner_odds[1])) + 1 if winner_odds > 0 else -1
-    computedLoser = (float(loser_odds[0]) / float(loser_odds[1])) + 1 if loser_odds > 0 else -1
+    computedWinner = (float(winner_odds[0]) / float(winner_odds[1])) + 1 if winner_odds != -1 and winner_odds[1] != '' and winner_odds[1] != 0 else -1
+    computedLoser = (float(loser_odds[0]) / float(loser_odds[1])) + 1 if loser_odds != -1 and loser_odds[1] != '' and loser_odds[1] != 0 else -1
 
     return round(computedWinner, 2), round(computedLoser, 2)
 
@@ -280,6 +280,7 @@ def get_full_name(name, slug):
         return slug
 
     # Replace special characters in slug with regular characters
+    name = name.replace('-', ' ')
     name = ''.join((c for c in unicodedata.normalize('NFD', name) if unicodedata.category(c) != 'Mn'))
 
     slug_parts = slug.split('-')
@@ -290,9 +291,11 @@ def get_full_name(name, slug):
     last_name = ' '.join(capitalized_name_parts[:-1])
 
     temp_first_name = capitalized_slug.replace(last_name, '')
-    first_name = temp_first_name.lstrip(' ')
+    first_name = temp_first_name.lstrip()
+    last_name = last_name.lstrip()
     # print(f"First Name: {first_name}    Last Name: {last_name}")
 
+    #Just in case
     last_name = last_name.replace('-', ' ')
     first_name = first_name.replace('-', ' ')
 
