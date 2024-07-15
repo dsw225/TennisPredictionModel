@@ -5,7 +5,7 @@ class TennisMatch(models.Model):
     tourney_id = models.CharField(max_length=50)
     tourney_name = models.CharField(max_length=100)
     surface = models.CharField(max_length=20)
-    draw_size = models.IntegerField()
+    draw_size = models.IntegerField(null=True, blank=True)
     tourney_level = models.CharField(max_length=10)
     tourney_date = models.DateField()
     match_num = models.IntegerField()
@@ -63,14 +63,14 @@ class TennisMatch(models.Model):
 
 class Player(models.Model):
     #player_id,name_first,name_last,hand,dob,ioc,height,wikidata_id
-    player_id = models.IntegerField(max_length=50)
+    player_id = models.IntegerField()
     player_name = models.CharField(max_length=100)
     player_slug = models.CharField(max_length=100)
     player_hand = models.CharField(max_length=1, null=True, blank=True)
     player_dob = models.DateField()
     player_ioc = models.CharField(max_length=3)
     player_ht = models.IntegerField(null=True, blank=True)
-    player_sofa_id = models.IntegerField(max_length=50)
+    player_sofa_id = models.IntegerField()
     player_active = models.BooleanField(null=False)
 
 # RETURN LATER

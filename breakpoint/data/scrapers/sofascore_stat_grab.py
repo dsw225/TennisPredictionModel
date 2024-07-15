@@ -3,18 +3,18 @@ import asyncio
 import aiohttp
 import aiofiles
 import pandas as pd
-import random
 import unicodedata
 import signal
+import traceback
 
 base_url = "https://api.sofascore.com"
 headers = {'User-Agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36'}
 pd_headers = ['tourney_id','tourney_name','surface','draw_size','tourney_level','tourney_date',
               'match_num','best_of','round','minutes','winner_id','winner_seed','winner_entry','winner_name','winner_hand',
               'winner_ht','winner_ioc','winner_age','loser_id','loser_seed','loser_entry','loser_name',
-              'loser_hand','loser_ht','loser_ioc','loser_age','score','w1','w2','w3','w4','w5','w_ace',
+              'loser_hand','loser_ht','loser_ioc','loser_age','winner_odds','loser_odds','score','w1','w2','w3','w4','w5','w_ace',
               'w_df','w_svpt','w_1stIn','w_1stWon','w_2ndWon','w_SvGms','w_bpSaved','w_bpFaced','l1','l2','l3','l4','l5','l_ace','l_df',
-              'l_svpt','l_1stIn','l_1stWon','l_2ndWon','l_SvGms','l_bpSaved','l_bpFaced','winner_rank','winner_rank_points','loser_rank','loser_rank_points']
+              'l_svpt','l_1stIn','l_1stWon','l_2ndWon','l_SvGms','l_bpSaved','l_bpFaced','winner_rank','loser_rank']
 matches_stored = []
 
 # Global variable to control program exit
@@ -67,7 +67,7 @@ async def get_year_to_date(mw):
     day_of_year = current_date.timetuple().tm_yday
     games_in_year = []
     try:
-        for day in range(day_of_year, day_of_year-2, -1):
+        for day in range(1, day_of_year, 1):
             # Calculate the date for each day in reverse order
             date = current_date - datetime.timedelta(days=day_of_year - day)
             matches = await get_stats(mw, date)
@@ -79,6 +79,7 @@ async def get_year_to_date(mw):
         print("Completed Run Successfully")
     except Exception as e:
         print(f"Exception: {e}, saving data")
+        traceback.print_exc()
         pass
 
     all_games = pd.DataFrame(games_in_year, columns=pd_headers)
@@ -90,7 +91,7 @@ def save_data_to_csv(mw, data):
         'm': 'atp_matches_', 'w': 'wta_matches_', 'mc': 'atp_matches_qual_chall_', 'wc': 'wta_matches_qual_chall_', 'mi': 'itf_men_matches_', 'wi': 'itf_women_matches_'
     }
     prefix = prefix_mapping.get(mw, '')
-    filename = f'csvs/Generated/{prefix}{datetime.date.today().year}2.csv'
+    filename = f'data/csvs/Generated/{prefix}{datetime.date.today().year}_Updated_NoUpload.csv'
     data.to_csv(filename, index=False)
     print(f"Data saved to {filename}")
 
@@ -111,13 +112,14 @@ async def get_stats(mw, date):
             return
         
         unsorted_matches = json_data.get('events', [])
-        unsorted_matches = [match for match in unsorted_matches if not ('doubles' in match.get('tournament', {}).get('slug', ''))] # Remove all doubles
+        unsorted_matches = [match for match in unsorted_matches if not ('doubles' in match.get('tournament', {}).get('uniqueTournament', {}).get('slug', ''))] # Remove all doubles
         print(f"Found {len(unsorted_matches)} matches.")
 
         for match in unsorted_matches:
             match_id = match['id']
             match_stats_url = f"/api/v1/event/{match_id}/statistics"
             match_info_url = f"/api/v1/event/{match_id}"
+            match_odds_url = f"/api/v1/event/{match_id}/odds/1/all" # Has other odds included if wanted in future
 
             global exit_program
             if exit_program:  # Check if keyboard interrupt thrown
@@ -139,7 +141,12 @@ async def get_stats(mw, date):
                 print(f"Failed to fetch event info for match ID {match_id}.")
                 continue
 
-            match_stats = await extract_match_stats(match_info, match_stats, date)
+            match_odds = await fetch(session, base_url+match_odds_url, proxy_url, auth)
+            if not match_odds:
+                print(f"Failed to fetch event odds for match ID {match_id}.")
+                continue
+
+            match_stats = await extract_match_stats(match_info, match_stats, match_odds, date)
             date_stats.append(match_stats)
 
             print(f"Finished retrieval of match {match_id}")
@@ -147,7 +154,7 @@ async def get_stats(mw, date):
 
     return date_stats
 
-async def extract_match_stats(match_info, match_stats, date):
+async def extract_match_stats(match_info, match_stats, match_odds, date):
     try:
         match_stats_all = match_stats["statistics"][0]["groups"]
         match_info_data = match_info["event"]
@@ -159,12 +166,24 @@ async def extract_match_stats(match_info, match_stats, date):
         print(f"Canceled match {match_info_data.get('id', '')}")
         return {}
 
+    # Tourney Level
     game_level = {2000: 'G', 1000: 'M'}
     tourney_level = game_level.get(match_info_data.get("tournament", {}).get("uniqueTournament", {}).get("tennisPoints", 0), 'A')
 
-    elapsed_time = datetime.datetime.fromtimestamp(match_info_data.get("changes", {}).get("changeTimestamp",0)) - datetime.datetime.fromtimestamp(match_info_data.get("time", {}).get("currentPeriodStartTimestamp", 0))
-    minutes = int(elapsed_time.total_seconds() // 60)
+    # Length of Match
+    totalSeconds = 0
+    time_data = match_info_data.get("time", {})
+    for key, value in time_data.items():
+        if "period" in key:
+            totalSeconds += int(value) 
+    
+    minutes = round(totalSeconds/60) if totalSeconds > 0 else 0
 
+    # Match Odds
+    match_odds = match_odds.get("markets", {})[0]
+    odds = get_player_odds(match_odds.get("choices", {})) if match_odds.get("isLive", '') != True else (-1, -1)
+
+    # Round of Tournament
     round_level = {29: 'F', 28: 'SF', 27: 'QF', 5: 'R16', 6: 'R32', 32: 'R64', 64: 'R128', 1: 'RR'}
     round_ = round_level.get(match_info_data.get("roundInfo", {}).get("round", 0), 'RR')
 
@@ -173,7 +192,7 @@ async def extract_match_stats(match_info, match_stats, date):
 
     best_of = 5 if player_a_wins == 3 or player_b_wins == 3 else 3 if player_a_wins == 2 or player_b_wins == 2 else ''
 
-    stats = initialize_stats(match_info_data, tourney_level, date, best_of, round_, minutes)
+    stats = initialize_stats(match_info_data, tourney_level, date, best_of, round_, minutes, odds)
     hand_table = {"right-handed": 'R', "left-handed": 'L'}
     
     if match_info_data.get('winnerCode') == 1:
@@ -189,14 +208,29 @@ async def extract_match_stats(match_info, match_stats, date):
 
     return stats
 
-def initialize_stats(match, tourney_level, date, best_of, round_, minutes):
+def get_player_odds(match_odds):
+    winner_odds = -1 
+    loser_odds = -1
+    if match_odds[0].get("winning", 0) == True:
+        winner_odds = match_odds[0].get("fractionalValue", '').split('/')
+        loser_odds = match_odds[1].get("fractionalValue", '').split('/')
+    else:
+        loser_odds = match_odds[0].get("fractionalValue", '').split('/')
+        winner_odds = match_odds[1].get("fractionalValue", '').split('/')
+
+    computedWinner = (float(winner_odds[0]) / float(winner_odds[1])) + 1 if winner_odds != -1 else -1
+    computedLoser = (float(loser_odds[0]) / float(loser_odds[1])) + 1 if loser_odds != -1 else -1
+
+    return round(computedWinner, 2), round(computedLoser, 2)
+
+def initialize_stats(match, tourney_level, date, best_of, round_, minutes, odds):
     return {
         "tourney_id": match.get("tournament", {}).get("uniqueTournament", {}).get("id", 0),
         "tourney_name": match.get("tournament", {}).get("uniqueTournament", {}).get("name", "N/A"),
         "surface": match.get("groundType", "Unknown"),
         "draw_size": "",
         "tourney_level": tourney_level,
-        "tourney_date": date.strftime('%Y%m%d'),
+        "tourney_date": datetime.datetime.fromtimestamp(match.get("startTimestamp", 0)).date().strftime('%Y%m%d') if match.get("startTimestamp", 0) != 0 else date.strftime('%Y%m%d'),
         "match_num": match.get("id", 0),
         "best_of": best_of,
         "round": round_,
@@ -205,6 +239,7 @@ def initialize_stats(match, tourney_level, date, best_of, round_, minutes):
         "winner_hand": "", "winner_ht": "", "winner_ioc": "", "winner_age": "",
         "loser_id": "", "loser_seed": "", "loser_entry": "", "loser_name": "",
         "loser_hand": "", "loser_ht": "", "loser_ioc": "", "loser_age": "",
+        "winner_odds": odds[0], "loser_odds": odds[1],
         "w1": 0, "w2": 0, "w3": 0, "w4": 0, "w5": 0, "w_ace": 0, "w_df": 0, 
         "w_svpt": 0, "w_1stIn": 0, "w_1stWon": 0, "w_2ndWon": 0, "w_SvGms": 0, 
         "w_bpSaved": 0, "w_bpFaced": 0, "l1": 0, "l2": 0, "l3": 0, "l4": 0, 
@@ -247,16 +282,28 @@ def get_full_name(name, slug):
     # Replace special characters in slug with regular characters
     name = ''.join((c for c in unicodedata.normalize('NFD', name) if unicodedata.category(c) != 'Mn'))
 
-    parts = name.split()
-    full_name = slug.split('-')[-1].capitalize() + ' ' + ' '.join(parts[:-1])
-    return full_name
+    slug_parts = slug.split('-')
+    capitalized_slug = ' '.join([part.capitalize() for part in slug_parts])
+
+    name_parts = name.replace('\'', '').split(' ')
+    capitalized_name_parts = [part.capitalize() for part in name_parts]
+    last_name = ' '.join(capitalized_name_parts[:-1])
+
+    temp_first_name = capitalized_slug.replace(last_name, '')
+    first_name = temp_first_name.lstrip(' ')
+    # print(f"First Name: {first_name}    Last Name: {last_name}")
+
+    last_name = last_name.replace('-', ' ')
+    first_name = first_name.replace('-', ' ')
+
+    return f"{first_name} {last_name}"
 
 async def main():
     global proxy_url
     global auth
-    proxy_url, auth = await read_proxies("scrapers/proxy_addresses/smartproxy.csv")
+    proxy_url, auth = await read_proxies("data/scrapers/proxy_addresses/smartproxy.csv")
 
-    mw = 'w'
+    mw = 'm'
 
     games_data = await get_year_to_date(mw)
     save_data_to_csv(mw, games_data)
