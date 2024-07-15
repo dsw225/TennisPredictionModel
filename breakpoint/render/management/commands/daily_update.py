@@ -348,8 +348,8 @@ class Command(BaseCommand):
             loser_odds = match_odds[0].get("fractionalValue", '').split('/')
             winner_odds = match_odds[1].get("fractionalValue", '').split('/')
 
-        computedWinner = (float(winner_odds[0]) / float(winner_odds[1])) + 1 if winner_odds != -1 else -1
-        computedLoser = (float(loser_odds[0]) / float(loser_odds[1])) + 1 if loser_odds != -1 else -1
+        computedWinner = (float(winner_odds[0]) / float(winner_odds[1])) + 1 if winner_odds > 0 else -1
+        computedLoser = (float(loser_odds[0]) / float(loser_odds[1])) + 1 if loser_odds > 0 else -1
 
         return round(computedWinner, 2), round(computedLoser, 2)
 
