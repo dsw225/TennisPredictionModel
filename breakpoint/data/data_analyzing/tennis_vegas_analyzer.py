@@ -1,6 +1,6 @@
 import csv
 import pandas as pd
-file_path = 'csvs/WTA (Womens)/Odds/2024.xlsx'
+file_path = 'data/csvs/WTA (Womens)/Odds/2024.xlsx'
 
 data = pd.read_excel(file_path)
 
