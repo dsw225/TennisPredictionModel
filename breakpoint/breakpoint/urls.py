@@ -20,6 +20,16 @@ from render.views import *
 
 urlpatterns = [
     re_path('admin/', admin.site.urls),
-    re_path('tennismatch/', TennisMatchView.as_view(), name='xxx'),
-    re_path('player/', PlayerView.as_view(), name='xxx'),
+    re_path('mens-tennis-matches/', MensTennisMatchView.as_view(), name='mens-tennis-match-list'),
+    re_path('womens-tennis-matches/', WomensTennisMatchView.as_view(), name='womens-tennis-match-list'),
+    re_path('mens-players/', MensPlayerView.as_view(), name='mens-player-view-list'),
+    re_path('womens-players/', WomensPlayerView.as_view(), name='womens-player-view-list'),
+    re_path('mens-full-elos/', MensFullEloStatsView.as_view(), name='mens-full-elos-list'),
+    re_path('mens-hard-elos/', MensHardEloStatsView.as_view(), name='mens-hard-elos-list'),
+    re_path('mens-clay-elos/', MensClayEloStatsView.as_view(), name='mens-clay-elos-list'),
+    re_path('mens-grass-elos/', MensGrassEloStatsView.as_view(), name=' mens-grass-elos-list'),
+    re_path('womens-full-elos/', WomensFullEloStatsView.as_view(), name='womens-full-elos-list'),
+    re_path('womens-hard-elos/', WomensHardEloStatsView.as_view(), name='womens-hard-elos-list'),
+    re_path('womens-clay-elos/', WomensClayEloStatsView.as_view(), name='womens-clay-elos-list'),
+    re_path('womens-grass-elos/', WomensGrassEloStatsView.as_view(), name='womens-grass-elos-list'),
 ]

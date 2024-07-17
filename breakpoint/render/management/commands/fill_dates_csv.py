@@ -5,6 +5,7 @@ import aiofiles
 import asyncio
 import os
 import django
+from django.db import models
 
 # Setup Django environment
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'breakpoint.settings')
@@ -12,7 +13,7 @@ django.setup()
 
 # Import Django models and necessary components
 from django.core.management.base import BaseCommand
-from render.models import TennisMatch
+from render.models import MensTennisMatch, WomensTennisMatch
 
 class Command(BaseCommand):
     help = 'Import tennis match data asynchronously'
@@ -72,10 +73,10 @@ class Command(BaseCommand):
         dateend = datetime.strptime(end, "%Y%m%d")
 
         if mw == 'm':   
-            prefix = 'atp'
+            type = MensTennisMatch
             input_path = 'data/csvs/ATP (Mens)/tennis_atp/atp_matches_'
         else:
-            prefix = 'wta'
+            type = WomensTennisMatch
             input_path = 'data/csvs/WTA (Womens)/tennis_wta/wta_matches_'
 
         tasks = []
@@ -169,9 +170,9 @@ class Command(BaseCommand):
         }
 
         # Insert data into model asynchronously
-        await self.insert_dataframe_into_model(matches_df, field_mapping, default_values)
+        await self.insert_dataframe_into_model(matches_df, field_mapping, type, default_values)
 
-    async def insert_dataframe_into_model(self, df, field_mapping, default_values=None):
+    async def insert_dataframe_into_model(self, df, field_mapping, type: models.Model, default_values=None):
         if default_values is None:
             default_values = {}
 
@@ -184,7 +185,7 @@ class Command(BaseCommand):
                     mapped_data[field] = value
 
             try:
-                await TennisMatch.objects.acreate(**mapped_data)
+                await type.objects.acreate(**mapped_data)
             except Exception as e:
                 print(f"Failed to add match {i + 1}/{len(df)} at date {mapped_data['tourney_date']} with exception {e}")
             print(f"{i} Matches added")

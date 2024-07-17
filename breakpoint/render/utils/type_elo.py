@@ -15,6 +15,7 @@ K_FUNCTION_MULTIPLIER = 2.0 * (K_FUNCTION_AMPLIFIER - 1.0)
 DELTA_RATING_CAP = 200.0
 SERVE_RETURN_K_FACTOR = 4.2
 TB_K_FACTOR = 3.275
+MIN_MATCHES = 10
 
 async def gather_elos(df: pd.DataFrame):
     # Basic filter conditions
@@ -31,8 +32,8 @@ async def gather_elos(df: pd.DataFrame):
 
     players_to_elo = combined_names.drop_duplicates().tolist()
 
-    new_header = ['player', 'last_date', 'match_number', 'matches_played', 'elo_rating', 'set_elo_rating', 
-                  'game_elo_rating', 'service_game_elo_rating', 'return_game_elo_rating', 'tie_break_elo_rating']
+    new_header = ['player', 'last_date', 'match_number', 'matches_played', 'elo_rating', 'point_elo_rating', 'game_elo_rating', 
+                  'set_elo_rating', 'service_game_elo_rating', 'return_game_elo_rating', 'tie_break_elo_rating']
 
     data = {
         'player': players_to_elo,   
@@ -40,8 +41,9 @@ async def gather_elos(df: pd.DataFrame):
         'match_number': [0] * len(players_to_elo),
         'matches_played': [0] * len(players_to_elo),
         'elo_rating': [START_RATING] * len(players_to_elo),
-        'set_elo_rating': [START_RATING] * len(players_to_elo),
+        'point_elo_rating': [START_RATING] * len(players_to_elo),
         'game_elo_rating': [START_RATING] * len(players_to_elo),
+        'set_elo_rating': [START_RATING] * len(players_to_elo),
         'service_game_elo_rating': [START_RATING] * len(players_to_elo),
         'return_game_elo_rating': [START_RATING] * len(players_to_elo),
         'tie_break_elo_rating': [START_RATING] * len(players_to_elo),
@@ -60,7 +62,7 @@ async def gather_elos(df: pd.DataFrame):
 
     players_elo['last_date'] = pd.to_datetime(players_elo['last_date'])
     players_elo = players_elo[~(
-                (players_elo['matches_played'] < 5)
+                (players_elo['matches_played'] < MIN_MATCHES)
             )]
     players_elo = players_elo.sort_values(by='elo_rating', ascending=False)
     return players_elo
@@ -106,7 +108,7 @@ async def update_elos(row):
 
         tie_breaks_played = tie_breaks_won_winner + tie_breaks_won_loser
 
-        sets_games_elo(idxA, idxB, row, w_sets, l_sets, w_games, l_games)
+        points_sets_games_elo(idxA, idxB, row, w_sets, l_sets, w_games, l_games)
         tb_elo(idxA, idxB, row, tie_breaks_won_winner, tie_breaks_won_loser, tie_breaks_played, deciding_set)
         return_serve_elo(idxA, idxB, row)
         primary_elo(idxA, idxB, row)
@@ -142,18 +144,33 @@ def primary_elo(idxA, idxB, row):
     update_dataframe(idxB, 'matches_played', players_elo.at[idxB, 'matches_played'] + 1)
 
 # Stolen and changed from https://github.com/mcekovic/tennis-crystal-ball/blob/master/tennis-stats/src/main/java/org/strangeforest/tcb/stats/model/elo/EloCalculator.java need to implement
-def sets_games_elo(idxA, idxB, row, w_sets, l_sets, w_games, l_games):
+def points_sets_games_elo(idxA, idxB, row, w_sets, l_sets, w_games, l_games):
     rAset = players_elo.at[idxA, 'set_elo_rating']
     rBset = players_elo.at[idxB, 'set_elo_rating']
 
     rAgame = players_elo.at[idxA, 'game_elo_rating']
     rBgame = players_elo.at[idxB, 'game_elo_rating']
 
+    rApoint = players_elo.at[idxA, 'point_elo_rating']
+    rBpoint = players_elo.at[idxB, 'point_elo_rating']
+
+    deltaPoint = delta_rating(rApoint, rBpoint, 'N/A')
     deltaSet = delta_rating(rAset, rBset, 'N/A')
     deltaGame = delta_rating(rAgame, rBgame, 'N/A')
 
+    w_return_points = row['l_svpt'] - row['l_1stWon'] - row['l_2ndWon']
+    l_return_points = row['w_svpt'] - row['w_1stWon'] - row['w_2ndWon']
+    w_serve_points = row['w_1stWon'] + row['w_2ndWon']
+    l_serve_points = row['l_1stWon'] + row['l_2ndWon']
+    w_points = w_serve_points + w_return_points
+    l_points = l_serve_points + l_return_points
+
+    deltaPointNew = deltaPoint * ((w_points -  l_points)/(w_points + l_points))
     deltaSetNew = deltaSet * ((w_sets -  l_sets)/(w_sets + l_sets))
     deltaGameNew = deltaGame * ((w_games - l_games)/(w_games + l_games))
+
+    update_dataframe(idxA, 'point_elo_rating', new_rating(rApoint, deltaPointNew, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A"))
+    update_dataframe(idxB, 'point_elo_rating', new_rating(rBpoint, -deltaPointNew, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A"))
 
     update_dataframe(idxA, 'set_elo_rating', new_rating(rAset, deltaSetNew, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A"))
     update_dataframe(idxB, 'set_elo_rating', new_rating(rBset, -deltaSetNew, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A"))
