@@ -21,6 +21,14 @@ POINT_K_FACTOR = 1
 GAME_K_FACTOR = 1
 SET_K_FACTOR = 1
 
+async def filter_games(df: pd.DataFrame):
+    df['last_date'] = pd.to_datetime(df['last_date'])
+    df = df[~(
+                (df['matches_played'] < MIN_MATCHES)
+            )]
+    df = df.sort_values(by='elo_rating', ascending=False)
+    return df
+
 async def update_elos(players_elo : pd.DataFrame, row):
     try:
         player_a = players_elo[players_elo['player'] == row["winner_name"]]
