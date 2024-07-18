@@ -109,7 +109,6 @@ def player_year_to_date(player_one, date, mw):
     player_stats_df = pd.DataFrame(player_stats, columns=new_header)
     return calculate_rolling_averages(player_stats_df)
 
-
 def all_year_to_date(date, mw):
     dateend = datetime.strptime(str(date), "%Y%m%d")
     datestart = datetime(dateend.year-1, dateend.month, dateend.day)

@@ -1,7 +1,7 @@
 import requests
 import os
 
-mw = 'm'            ## 'm' = men, 'w' = women
+mw = 'w'            ## 'm' = men, 'w' = women
 yr = 2024        ## year to grab
 
 if mw == 'm':   

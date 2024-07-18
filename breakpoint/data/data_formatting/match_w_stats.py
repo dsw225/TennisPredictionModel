@@ -1,4 +1,4 @@
-import rolling_stats as rolling_stats
+import rolling_stats
 import career_stats
 import pandas as pd
 import csv
@@ -60,7 +60,6 @@ def create_matchup(match, mw, career_stats):
                 0 #For 1st player loss
         ]
 
-
 def data_set_creator(yr, mw):
     if mw == 'm':   
         prefix = 'atp'
@@ -106,6 +105,5 @@ def data_set_creator(yr, mw):
 
     player_stats_df.to_csv('data/csvs/Generated/' + output_path, index=False)
     print("Done")
-
 
 data_set_creator(2023, 'm')
