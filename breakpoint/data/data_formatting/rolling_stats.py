@@ -67,10 +67,10 @@ def player_year_to_date(player_one, date, mw):
     datestart = datetime(dateend.year-1, dateend.month, dateend.day)
     if mw == 'm':   
         prefix = 'atp'
-        input_path = 'csvs/ATP (Mens)/tennis_atp/'
+        input_path = 'data/csvs/ATP (Mens)/tennis_atp/'
     else:
         prefix = 'wta'
-        input_path = 'csvs/WTA (Womens)/tennis_wta/'
+        input_path = 'data/csvs/WTA (Womens)/tennis_wta/'
 
     all_matches = []
 
@@ -115,10 +115,10 @@ def all_year_to_date(date, mw):
     datestart = datetime(dateend.year-1, dateend.month, dateend.day)
     if mw == 'm':   
         prefix = 'atp'
-        input_path = 'csvs/ATP (Mens)/tennis_atp/'
+        input_path = 'data/csvs/ATP (Mens)/tennis_atp/'
     else:
         prefix = 'wta'
-        input_path = 'csvs/WTA (Womens)/tennis_wta/'
+        input_path = 'data/csvs/WTA (Womens)/tennis_wta/'
 
     all_matches = []
 

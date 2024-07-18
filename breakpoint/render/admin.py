@@ -17,3 +17,6 @@ admin.site.register(WomensFullEloStats)
 admin.site.register(WomensHardEloStats)
 admin.site.register(WomensClayEloStats)
 admin.site.register(WomensGrassEloStats)
+
+admin.site.register(MensTennisMatchStats)
+admin.site.register(WomensTennisMatchStats)

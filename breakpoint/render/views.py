@@ -221,3 +221,39 @@ class WomensGrassEloStatsView(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+class MensTennisMatchStatsView(APIView):
+    serializer_class = MensTennisMatchStatsSerializer
+
+    def get(self, request):
+        matches = MensTennisMatchStats.objects.all()
+        paginator = MyLimitOffsetPagination()
+        paginator.page_size = 5  # Ensure the page size is set to 5
+        paginated_matches = paginator.paginate_queryset(matches, request)
+        serializer = MensTennisMatchStatsSerializer(paginated_matches, many=True)
+        return paginator.get_paginated_response(serializer.data)
+
+    def post(self, request):
+        serializer = MensTennisMatchStatsSerializer(data=request.data)
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+class WomensTennisMatchStatsView(APIView):
+    serializer_class = WomensTennisMatchStatsSerializer
+
+    def get(self, request):
+        matches = WomensTennisMatchStats.objects.all()
+        paginator = MyLimitOffsetPagination()
+        paginator.page_size = 5  # Ensure the page size is set to 5
+        paginated_matches = paginator.paginate_queryset(matches, request)
+        serializer = WomensTennisMatchStatsSerializer(paginated_matches, many=True)
+        return paginator.get_paginated_response(serializer.data)
+
+    def post(self, request):
+        serializer = WomensTennisMatchStatsSerializer(data=request.data)
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

@@ -1,11 +1,11 @@
-import breakpoint.rolling_stats as rolling_stats
+import rolling_stats as rolling_stats
 import career_stats
 import pandas as pd
 import csv
 from random import random
 from datetime import datetime
 
-async def create_matchup(match, mw, career_stats):
+def create_matchup(match, mw, career_stats):
     winner = match['winner_name']
     loser = match['loser_name']
     whand = match['winner_hand']
@@ -61,17 +61,13 @@ async def create_matchup(match, mw, career_stats):
         ]
 
 
-
-
-
-
 def data_set_creator(yr, mw):
     if mw == 'm':   
         prefix = 'atp'
-        input_path = 'csvs/ATP (Mens)/tennis_atp/'
+        input_path = 'data/csvs/ATP (Mens)/tennis_atp/'
     else:
         prefix = 'wta'
-        input_path = 'csvs/WTA (Womens)/tennis_wta/'
+        input_path = 'data/csvs/WTA (Womens)/tennis_wta/'
 
     file_path = f"{input_path}{prefix}_matches_{yr}.csv"
     df = pd.read_csv(file_path) # df = pd.read_csv(file_path, parse_dates=['tourney_date'])
@@ -108,5 +104,8 @@ def data_set_creator(yr, mw):
 
     output_path = 'stats_' + prefix + '_' + str(yr) + '.csv'
 
-    player_stats_df.to_csv('csvs/Generated/' + output_path, index=False)
+    player_stats_df.to_csv('data/csvs/Generated/' + output_path, index=False)
     print("Done")
+
+
+data_set_creator(2023, 'm')

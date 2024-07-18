@@ -52,10 +52,10 @@ def career_stats(date, mw):
     datestart = datetime(1990, 1, 1) # For now
     if mw == 'm':   
         prefix = 'atp'
-        input_path = 'csvs/ATP (Mens)/tennis_atp/'
+        input_path = 'data/csvs/ATP (Mens)/tennis_atp/'
     else:
         prefix = 'wta'
-        input_path = 'csvs/WTA (Womens)/tennis_wta/'
+        input_path = 'data/csvs/WTA (Womens)/tennis_wta/'
 
     all_matches = []
 

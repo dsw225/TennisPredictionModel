@@ -32,4 +32,6 @@ urlpatterns = [
     re_path('womens-hard-elos/', WomensHardEloStatsView.as_view(), name='womens-hard-elos-list'),
     re_path('womens-clay-elos/', WomensClayEloStatsView.as_view(), name='womens-clay-elos-list'),
     re_path('womens-grass-elos/', WomensGrassEloStatsView.as_view(), name='womens-grass-elos-list'),
+    re_path('mens-tennis-match-stats/', MensTennisMatchStatsView.as_view(), name='mens-tennis-match-stats-list'),
+    re_path('womens-tennis-match-stats/', WomensTennisMatchStatsView.as_view(), name='womens-tennis-match-stats-list'),
 ]

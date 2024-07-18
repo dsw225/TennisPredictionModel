@@ -14,4 +14,6 @@ urlpatterns = [
     path('womens-hard-elos/', WomensHardEloStatsView.as_view(), name='womens-hard-elos-list'),
     path('womens-clay-elos/', WomensClayEloStatsView.as_view(), name='womens-clay-elos-list'),
     path('womens-grass-elos/', WomensGrassEloStatsView.as_view(), name='womens-grass-elos-list'),
+    path('mens-tennis-match-stats/', MensTennisMatchStatsView.as_view(), name='mens-tennis-match-stats-list'),
+    path('womens-tennis-match-stats/', WomensTennisMatchStatsView.as_view(), name='womens-tennis-match-stats-list'),
 ]

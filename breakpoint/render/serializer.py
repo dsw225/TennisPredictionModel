@@ -60,3 +60,13 @@ class WomensGrassEloStatsViewSerializer(serializers.ModelSerializer):
     class Meta:
         model = WomensGrassEloStats
         fields = '__all__'
+
+class MensTennisMatchStatsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MensTennisMatchStats
+        fields = '__all__'
+
+class WomensTennisMatchStatsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WomensTennisMatchStats
+        fields = '__all__'

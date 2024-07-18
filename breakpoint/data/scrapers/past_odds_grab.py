@@ -1,15 +1,15 @@
 import requests
 import os
 
-mw = 'w'            ## 'm' = men, 'w' = women
+mw = 'm'            ## 'm' = men, 'w' = women
 yr = 2024        ## year to grab
 
 if mw == 'm':   
     url = f"http://www.tennis-data.co.uk/{yr}/{yr}.xlsx"
-    directory = "csvs/ATP (Mens)/Odds"
+    directory = "data/csvs/ATP (Mens)/Odds"
 else:
     url = f"http://www.tennis-data.co.uk/{yr}w/{yr}.xlsx"
-    directory = "csvs/WTA (Womens)/Odds"
+    directory = "data/csvs/WTA (Womens)/Odds"
 
 # Ensure the directory exists; if not, create it
 os.makedirs(directory, exist_ok=True)
