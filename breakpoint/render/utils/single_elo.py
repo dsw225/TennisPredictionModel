@@ -1,5 +1,5 @@
 import pandas as pd
-import aiofiles
+from tqdm.asyncio import tqdm
 import asyncio
 from datetime import datetime, timedelta
 from math import pow, copysign, floor, ceil
@@ -8,18 +8,24 @@ import numpy as np
 from render.utils.elo_functions import *
 
 async def gather_elos(df: pd.DataFrame):
-    # Basic filter conditions
-    conditions = ~(
-        df.iloc[:, 28].isnull() |
-        df.iloc[:, list(range(35, 42)) + list(range(48, 56))].isnull()
-    ).any(axis=1)
-    
-    df = df[conditions]
+    # Changing dataframe fix for future
+    w1_iloc = df.columns.get_loc('w1')
+    w_ace_iloc = df.columns.get_loc('w_ace')
+    w_bp_f_iloc = df.columns.get_loc('w_bpFaced')
+    l_ace_iloc = df.columns.get_loc('l_ace')
+    l_bp_f_iloc = df.columns.get_loc('l_bpFaced')
 
-    matches_df = df.sort_values(by='tourney_date').reset_index(drop=True)
+    # Basic filter conditions
+    conditions = (
+        ~pd.isnull(df.iloc[:, w1_iloc].values) &
+        ~pd.isnull(df.iloc[:, w_ace_iloc:w_bp_f_iloc+1].values).any(axis=1) &
+        ~pd.isnull(df.iloc[:, l_ace_iloc:l_bp_f_iloc+1].values).any(axis=1)
+    )
+
+    # Filter the DataFrame
+    matches_df = df[conditions].sort_values(by='tourney_date').reset_index(drop=True)
 
     combined_names = pd.concat([matches_df['winner_name'], matches_df['loser_name']])
-
     players_to_elo = combined_names.drop_duplicates().tolist()
 
     new_header = ['player', 'last_date', 'match_number', 'matches_played', 'elo_rating', 'point_elo_rating', 'game_elo_rating', 
@@ -41,14 +47,26 @@ async def gather_elos(df: pd.DataFrame):
 
     players_elo = pd.DataFrame(data, columns=new_header)
 
-
     tasks = []
+    pbar = tqdm(total=len(matches_df), desc="Processing Elos")
+
+    async def update_elos_with_progress(players_elo, row):
+        await update_elos(players_elo, row)
+        pbar.update(1)
+
     for index, row in matches_df.iterrows():
-        if index % 1000 == 0:
-            print(f"Processing Elos @ Match indexes: {index} - {index+1000}")
-        tasks.append(update_elos(players_elo, row))
-    
-    await asyncio.gather(*tasks)
+        tasks.append(update_elos_with_progress(players_elo, row))
+        
+        # To avoid accumulating too many tasks, you can process them in smaller batches
+        if len(tasks) >= 1000:
+            await asyncio.gather(*tasks)
+            tasks = []  # Reset the tasks list
+
+    # Process any remaining tasks
+    if tasks:
+        await asyncio.gather(*tasks)
+
+    pbar.close()
 
     players_elo = await filter_games(players_elo)
     return players_elo

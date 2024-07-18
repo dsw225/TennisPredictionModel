@@ -2,6 +2,7 @@ from math import pow, copysign, floor, ceil
 import pandas as pd
 import numpy as np
 import traceback
+import warnings
 
 START_RATING = 1500
 RATING_SCALE = 480.0
@@ -11,8 +12,8 @@ K_FUNCTION_AMPLIFIER_GRADIENT = 63.0
 K_FUNCTION_MULTIPLIER = 2.0 * (K_FUNCTION_AMPLIFIER - 1.0)
 
 DELTA_RATING_CAP = 200.0
-MIN_MATCHES = 10
-RECENT_K_FACTOR = 2.0
+MIN_MATCHES = 5
+RECENT_K_GAIN_FACTOR = 2
 
 # K_Factors in case adding league signifigance in future
 TB_K_FACTOR = 1
@@ -22,6 +23,7 @@ GAME_K_FACTOR = 1
 SET_K_FACTOR = 1
 
 async def filter_games(df: pd.DataFrame):
+    warnings.filterwarnings("ignore", category=FutureWarning, message="Comparison of Timestamp with datetime.date is deprecated")
     df['last_date'] = pd.to_datetime(df['last_date'])
     df = df[~(
                 (df['matches_played'] < MIN_MATCHES)
@@ -127,9 +129,9 @@ def points_sets_games_elo(players_elo : pd.DataFrame, idxA, idxB, row, w_sets, l
     w_points = w_serve_points + w_return_points
     l_points = l_serve_points + l_return_points
 
-    deltaPointNew = POINT_K_FACTOR * (wDeltaPoint * (w_points/(w_points+l_points)) - lDeltaPoint * (l_points/(w_points+l_points)))
-    deltaSetNew =  SET_K_FACTOR * (wDeltaSet * (w_sets/(w_sets+l_sets)) - lDeltaSet * (l_sets/(w_sets+l_sets)))
-    deltaGameNew = GAME_K_FACTOR * (wDeltaGame * (w_games/(w_games+l_games)) - lDeltaGame * (l_games/(w_games+l_games)))
+    deltaPointNew = POINT_K_FACTOR * (wDeltaPoint * (w_points/(w_points+l_points)) - lDeltaPoint * (l_points/(w_points+l_points))) if w_points+l_points > 0 else 0
+    deltaSetNew =  SET_K_FACTOR * (wDeltaSet * (w_sets/(w_sets+l_sets)) - lDeltaSet * (l_sets/(w_sets+l_sets))) if w_sets+w_sets > 0 else 0
+    deltaGameNew = GAME_K_FACTOR * (wDeltaGame * (w_games/(w_games+l_games)) - lDeltaGame * (l_games/(w_games+l_games))) if w_sets+l_sets > 0 else 0
 
     update_dataframe(players_elo, idxA, 'point_elo_rating', new_rating(rApoint, deltaPointNew, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A"))
     update_dataframe(players_elo, idxB, 'point_elo_rating', new_rating(rBpoint, -deltaPointNew, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A"))
