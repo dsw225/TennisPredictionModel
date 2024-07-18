@@ -14,19 +14,13 @@ K_FUNCTION_AMPLIFIER_GRADIENT = 63.0
 K_FUNCTION_MULTIPLIER = 2.0 * (K_FUNCTION_AMPLIFIER - 1.0)
 
 DELTA_RATING_CAP = 200.0
-# TB_K_FACTOR = .005 # Tune
-# SERVE_RETURN_K_FACTOR = .005 # Tune
 MIN_MATCHES = 10
+RECENT_K_FACTOR = 2.0
 
-# RECENT_K_FACTOR = 2.0
-# POINT_K_FACTOR = .01 # Tune
-# GAME_K_FACTOR = 0.0556
-# SET_K_FACTOR = 0.5
-
-TB_K_FACTOR = 1.5 # Tune
-SERVE_RETURN_K_FACTOR = 2 # Tune
-
-POINT_K_FACTOR = 2 # Tune
+# K_Factors in case adding league signifigance in future
+TB_K_FACTOR = 1
+SERVE_RETURN_K_FACTOR = 1
+POINT_K_FACTOR = 1
 GAME_K_FACTOR = 1
 SET_K_FACTOR = 1
 
@@ -94,11 +88,11 @@ async def update_elos(row):
 
         sets = 0
     
-        sets += 1 if not np.isnan(row['w1']) and not np.isnan(row['l1']) else 0
-        sets += 1 if not np.isnan(row['w2']) and not np.isnan(row['l2']) else 0
-        sets += 1 if not np.isnan(row['w3']) and not np.isnan(row['l3']) else 0
-        sets += 1 if not np.isnan(row['w4']) and not np.isnan(row['l4']) else 0
-        sets += 1 if not np.isnan(row['w5']) and not np.isnan(row['l5']) else 0
+        sets += 1 if not np.isnan(pd.to_numeric(row['w1'], errors='coerce')) and not np.isnan(pd.to_numeric(row['l1'], errors='coerce')) else 0
+        sets += 1 if not np.isnan(pd.to_numeric(row['w2'], errors='coerce')) and not np.isnan(pd.to_numeric(row['l2'], errors='coerce')) else 0
+        sets += 1 if not np.isnan(pd.to_numeric(row['w3'], errors='coerce')) and not np.isnan(pd.to_numeric(row['l3'], errors='coerce')) else 0
+        sets += 1 if not np.isnan(pd.to_numeric(row['w4'], errors='coerce')) and not np.isnan(pd.to_numeric(row['l4'], errors='coerce')) else 0
+        sets += 1 if not np.isnan(pd.to_numeric(row['w5'], errors='coerce')) and not np.isnan(pd.to_numeric(row['l5'], errors='coerce')) else 0
 
         w_games, l_games = 0, 0
         w_sets, l_sets = 0, 0
@@ -116,13 +110,11 @@ async def update_elos(row):
                     l_sets += 1
                 w_games += row[f"w{i}"]
                 l_games += row[f"l{i}"]
-            
-        deciding_set = True if sets == 3 and row['best_of'] == 3 or sets == 5 and row['best_of'] == 5 else False
 
         tie_breaks_played = tie_breaks_won_winner + tie_breaks_won_loser
 
         points_sets_games_elo(idxA, idxB, row, w_sets, l_sets, w_games, l_games)
-        tb_elo(idxA, idxB, row, tie_breaks_won_winner, tie_breaks_won_loser, tie_breaks_played, deciding_set)
+        tb_elo(idxA, idxB, row, tie_breaks_won_winner, tie_breaks_won_loser, tie_breaks_played)
         return_serve_elo(idxA, idxB, row)
         primary_elo(idxA, idxB, row)
     except Exception as e:
@@ -181,11 +173,6 @@ def points_sets_games_elo(idxA, idxB, row, w_sets, l_sets, w_games, l_games):
     w_points = w_serve_points + w_return_points
     l_points = l_serve_points + l_return_points
 
-    # Alternate Method - slightly worse
-    # deltaPointNew =  POINT_K_FACTOR * (wDeltaPoint * w_points - lDeltaPoint * l_points)
-    # deltaSetNew = SET_K_FACTOR * (wDeltaSet * w_sets - lDeltaSet * l_sets)
-    # deltaGameNew = GAME_K_FACTOR * (wDeltaGame * w_games - lDeltaGame * l_games)
-
     deltaPointNew = POINT_K_FACTOR * (wDeltaPoint * (w_points/(w_points+l_points)) - lDeltaPoint * (l_points/(w_points+l_points)))
     deltaSetNew =  SET_K_FACTOR * (wDeltaSet * (w_sets/(w_sets+l_sets)) - lDeltaSet * (l_sets/(w_sets+l_sets)))
     deltaGameNew = GAME_K_FACTOR * (wDeltaGame * (w_games/(w_games+l_games)) - lDeltaGame * (l_games/(w_games+l_games)))
@@ -199,21 +186,18 @@ def points_sets_games_elo(idxA, idxB, row, w_sets, l_sets, w_games, l_games):
     update_dataframe(idxA, 'game_elo_rating', new_rating(rAgame, deltaGameNew, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A"))
     update_dataframe(idxB, 'game_elo_rating', new_rating(rBgame, -deltaGameNew, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A"))
 
-def tb_elo(idxA, idxB, row, tie_breaks_won_winner, tie_breaks_won_loser, tie_breaks_played, deciding_set):
+def tb_elo(idxA, idxB, row, tie_breaks_won_winner, tie_breaks_won_loser, tie_breaks_played):
     rAtb = players_elo.at[idxA, 'tie_break_elo_rating']
     rBtb = players_elo.at[idxB, 'tie_break_elo_rating']
 
-    player_a_pressure_rating = pressure_rating(row['w_bpFaced'], row['w_bpSaved'], row['l_bpFaced'], row['l_bpSaved'], tie_breaks_won_winner, tie_breaks_played)
-    player_b_pressure_rating = pressure_rating(row['l_bpFaced'], row['l_bpSaved'], row['w_bpFaced'], row['w_bpSaved'], tie_breaks_won_loser, tie_breaks_played) # 300 - player_a
+    tb_winner = tie_breaks_won_winner/tie_breaks_played if tie_breaks_played > 0 else 0
+    tb_loser = tie_breaks_won_loser/tie_breaks_played if tie_breaks_played > 0 else 0
 
     w_delta = delta_rating(rAtb, rBtb, "N/A")
     l_delta = 1 - w_delta
 
-    # new_delta = TB_K_FACTOR * (w_delta * player_a_pressure_rating - l_delta * player_b_pressure_rating)
-
-    # ODD Return
-    if player_a_pressure_rating > 0:
-        new_delta = TB_K_FACTOR * (w_delta * (player_a_pressure_rating/(player_a_pressure_rating+player_b_pressure_rating)) - l_delta * (player_b_pressure_rating/(player_a_pressure_rating+player_b_pressure_rating)))
+    if tie_breaks_played > 0:
+        new_delta = TB_K_FACTOR * (w_delta * tb_winner - l_delta * tb_loser)
 
         update_dataframe(idxA, 'tie_break_elo_rating', new_rating(rAtb, new_delta, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A"))
         update_dataframe(idxB, 'tie_break_elo_rating', new_rating(rBtb, -new_delta, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A"))
@@ -227,21 +211,13 @@ def return_serve_elo(idxA, idxB, row):
     rAreturn = players_elo.at[idxA, 'return_game_elo_rating']
     rBreturn = players_elo.at[idxB, 'return_game_elo_rating']
 
-    playerA_serveRating = serve_rating(row['w_svpt'], row['w_1stIn'], row['w_1stWon'], row['w_2ndWon'], row['w_bpFaced'], row['w_bpSaved'], row['w_SvGms'])
-    playerB_serveRating = serve_rating(row['l_svpt'], row['l_1stIn'], row['l_1stWon'], row['l_2ndWon'], row['l_bpFaced'], row['l_bpSaved'], row['l_SvGms'])
+    playerA_serveRating = serve_rating(row['w_bpFaced'], row['w_bpSaved'], row['w_SvGms'])
+    playerB_serveRating = serve_rating(row['l_bpFaced'], row['l_bpSaved'], row['l_SvGms'])
 
     playerA_returnRating = 100 - playerB_serveRating
     playerB_returnRating = 100 - playerA_serveRating
 
     ratio = return_to_serve_ratio(surface)
-
-    # delta_aServe = delta_rating(rAservice, rBreturn, "N/A")
-    # delta_bReturn = 1 - delta_aServe
-    # new_delta_aServe = SERVE_RETURN_K_FACTOR * (delta_aServe * playerA_serveRating - delta_bReturn * playerB_returnRating * ratio)
-
-    # delta_bServe = delta_rating(rBservice, rAreturn, "N/A")
-    # delta_aReturn = 1 - delta_bServe
-    # new_delta_bServe = SERVE_RETURN_K_FACTOR * (delta_bServe * playerB_serveRating - delta_aReturn * playerA_returnRating * ratio)
 
     # Percentage Based
     delta_aServe = delta_rating(rAservice, rBreturn, "N/A")
@@ -257,34 +233,6 @@ def return_serve_elo(idxA, idxB, row):
 
     update_dataframe(idxA, 'return_game_elo_rating', new_rating(rAreturn, -new_delta_bServe, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A"))
     update_dataframe(idxB, 'return_game_elo_rating', new_rating(rBreturn, -new_delta_aServe, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A"))
-
-    # TESTER
-    # global grass_avg
-    # global clay_avg
-    # global hard_avg
-    # global total_avg
-
-    # if surface == 'Grass':
-    #     grass_avg[0] += playerA_serveRating + playerB_serveRating
-    #     grass_avg[1] += playerB_returnRating + playerA_returnRating
-    # elif surface == 'Clay':
-    #     clay_avg[0] += playerA_serveRating + playerB_serveRating
-    #     clay_avg[1] += playerB_returnRating + playerA_returnRating
-    # elif surface == 'Hard':
-    #     hard_avg[0] += playerA_serveRating + playerB_serveRating
-    #     hard_avg[1] += playerB_returnRating + playerA_returnRating
-
-    # # Update the total average
-    # total_avg[0] += playerA_serveRating + playerB_serveRating
-    # total_avg[1] += playerB_returnRating + playerA_returnRating
-
-
-    # # Print the results
-    # print(f"Clay Avg: {clay_avg[0]/clay_avg[1]}")
-    # print(f"Grass Avg: {grass_avg[0]/grass_avg[1]}")
-    # print(f"Hard Avg: {hard_avg[0]/hard_avg[1]}")
-    # print(f"All Avg: {total_avg[0]/total_avg[1]}")
-
 
 def k_factor(level, tourney_name, round, best_of, outcome):
     k = K_FACTOR
@@ -337,23 +285,12 @@ def elo_win_probability(elo_rating1, elo_rating2):
 
 def return_to_serve_ratio(surface):
     surface_ratios = {
-        "Hard": 2.0778, "Clay": 1.8099, "Grass": 2.2716
+        "Hard": 3.8045, "Clay": 2.9240, "Grass": 4.6229
     }
-    return surface_ratios.get(surface, 2.0098)
+    return surface_ratios.get(surface, 3.5727)
 
 # # Ultimate Tennis Serve Rating = Ace % - Double Faults % + 1st Serve % + 1st Serve Points Won % + 2nd Serve Points Won % + Break Points Saved % + Service Games Won %
 # # ATP Serve Rating Official = Aces - Double Faults + 1st Serve % + 1st Serve Points Won % + 2nd Serve Points Won % + Service Games Won %
-def serve_rating(sv_pt, firstServe, firstServeWon, secondServeWon, bp_faced, bp_saved, sv_gms):
-    secondServe = sv_pt - firstServe
-    firstServeWon_pct = firstServeWon/firstServe * 100 if firstServe > 0 else 72
-    secondServeWon_pct = secondServeWon/secondServe * 100 if secondServe > 0 else 50
+def serve_rating(bp_faced, bp_saved, sv_gms):
     service_games_won_pct = (sv_gms - (bp_faced - bp_saved))/ sv_gms * 100 if sv_gms > 0 else 79
-    return service_games_won_pct #firstServeWon_pct + secondServeWon_pct + service_games_won_pct
-
-# # Ultimate Tennis Tie Break Elo = wDelta * wTBs - lDelta * lTBs
-# # ATP Serve Rating Official = Break Points Converted % + Break Points Saved % + Tie Breaks Won % + Deciding Sets %
-def pressure_rating(bp_faced, bp_saved, bp_faced_oppo, bp_saved_oppo, tb_won, tb_total):
-    bp_saved_pct = bp_saved/bp_faced * 100 if bp_faced > 0 else 0
-    bp_converted_pct = (1 - bp_saved_oppo/bp_faced_oppo) * 100 if bp_faced_oppo > 0 else 0
-    tb_won_pct = tb_won/tb_total * 100 if tb_total > 0 else 0
-    return tb_won_pct #bp_saved_pct + bp_converted_pct + tb_won_pct
+    return service_games_won_pct 
