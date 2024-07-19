@@ -7,7 +7,7 @@ import traceback
 import numpy as np
 from render.utils.elo_functions import *
 
-async def gather_elos(df: pd.DataFrame):
+async def gather_elos(df: pd.DataFrame, enddate: datetime.date):
     # Changing dataframe fix for future
     w1_iloc = df.columns.get_loc('w1')
     w_ace_iloc = df.columns.get_loc('w_ace')
@@ -53,7 +53,8 @@ async def gather_elos(df: pd.DataFrame):
     # new_game_df = create_new_game_df(matches_df)
 
     tasks = []
-    pbar = tqdm(total=len(matches_df), desc="Processing Elos")
+    # For surfaces + total elo
+    pbar = tqdm(total=len(matches_df)*2, desc="Processing Elos")
 
     async def update_elos_with_progress(players_elo, row):
         await update_elos(players_elo, row)
@@ -67,6 +68,8 @@ async def gather_elos(df: pd.DataFrame):
             tasks.append(update_elos_with_progress(clay_players_elo, row))
         elif row['surface'] == "Hard":
             tasks.append(update_elos_with_progress(hard_players_elo, row))
+        else:
+            pbar.update(1)
 
         # To avoid accumulating too many tasks, you can process them in smaller batches
         if len(tasks) >= 1000:
@@ -79,50 +82,50 @@ async def gather_elos(df: pd.DataFrame):
 
     pbar.close()
 
-    players_elo = await filter_games(players_elo)
-    grass_players_elo = await filter_games(grass_players_elo)
-    clay_players_elo = await filter_games(clay_players_elo)
-    hard_players_elo = await filter_games(hard_players_elo)
+    players_elo = await filter_games(players_elo, enddate)
+    grass_players_elo = await filter_games(grass_players_elo, enddate)
+    clay_players_elo = await filter_games(clay_players_elo, enddate)
+    hard_players_elo = await filter_games(hard_players_elo, enddate)
 
     return players_elo, grass_players_elo, clay_players_elo, hard_players_elo
 
-# def create_new_game_df(df: pd.DataFrame):
-#     new_game_header = ['tourney_id', 'tourney_name', 'tourney_date', 'surface', 'best_of', 'match_num', 
-#                        'a_player_id', 'a_player_name', 'a_player_slug', 'b_player_id', 'b_player_name', 
-#                        'b_player_slug', 'a_elo_rating', 'a_point_elo_rating', 'a_game_elo_rating', 
-#                        'a_set_elo_rating', 'a_service_game_elo_rating', 'a_return_game_elo_rating', 
-#                        'a_tie_break_elo_rating', 'a_surface_elo_rating', 'a_surface_point_elo_rating', 
-#                        'a_surface_game_elo_rating', 'a_surface_set_elo_rating', 'a_surface_service_game_elo_rating', 
-#                        'a_surface_return_game_elo_rating', 'a_surface_tie_break_elo_rating', 'a_win_percent', 
-#                        'a_serve_rating', 'a_return_rating', 'a_pressure_rating', 'a_avg_vs_elo', 'a_matches_played', 
-#                        'b_elo_rating', 'b_point_elo_rating', 'b_game_elo_rating', 'b_set_elo_rating', 
-#                        'b_service_game_elo_rating', 'b_return_game_elo_rating', 'b_tie_break_elo_rating', 
-#                        'b_surface_elo_rating', 'b_surface_point_elo_rating', 'b_surface_game_elo_rating', 
-#                        'b_surface_set_elo_rating', 'b_surface_service_game_elo_rating', 'b_surface_return_game_elo_rating', 
-#                        'b_surface_tie_break_elo_rating', 'b_win_percent', 'b_serve_rating', 'b_return_rating', 
-#                        'b_pressure_rating', 'b_avg_vs_elo', 'b_matches_played', 'a_b_win']
+def create_new_game_df(df: pd.DataFrame):
+    new_game_header = ['tourney_id', 'tourney_name', 'tourney_date', 'surface', 'best_of', 'match_num', 
+                       'a_player_id', 'a_player_name', 'a_player_slug', 'b_player_id', 'b_player_name', 
+                       'b_player_slug', 'a_elo_rating', 'a_point_elo_rating', 'a_game_elo_rating', 
+                       'a_set_elo_rating', 'a_service_game_elo_rating', 'a_return_game_elo_rating', 
+                       'a_tie_break_elo_rating', 'a_surface_elo_rating', 'a_surface_point_elo_rating', 
+                       'a_surface_game_elo_rating', 'a_surface_set_elo_rating', 'a_surface_service_game_elo_rating', 
+                       'a_surface_return_game_elo_rating', 'a_surface_tie_break_elo_rating', 'a_win_percent', 
+                       'a_serve_rating', 'a_return_rating', 'a_pressure_rating', 'a_avg_vs_elo', 'a_matches_played', 
+                       'b_elo_rating', 'b_point_elo_rating', 'b_game_elo_rating', 'b_set_elo_rating', 
+                       'b_service_game_elo_rating', 'b_return_game_elo_rating', 'b_tie_break_elo_rating', 
+                       'b_surface_elo_rating', 'b_surface_point_elo_rating', 'b_surface_game_elo_rating', 
+                       'b_surface_set_elo_rating', 'b_surface_service_game_elo_rating', 'b_surface_return_game_elo_rating', 
+                       'b_surface_tie_break_elo_rating', 'b_win_percent', 'b_serve_rating', 'b_return_rating', 
+                       'b_pressure_rating', 'b_avg_vs_elo', 'b_matches_played', 'a_b_win']
     
-#     new_df = pd.DataFrame(columns=new_game_header)
+    new_df = pd.DataFrame(columns=new_game_header)
     
-#     new_df['tourney_id'] = df['tourney_id']
-#     new_df['tourney_name'] = df['tourney_name']
-#     new_df['tourney_date'] = df['tourney_date']
-#     new_df['surface'] = df['surface']
-#     new_df['best_of'] = df['best_of']
-#     new_df['match_num'] = df['match_num']
+    new_df['tourney_id'] = df['tourney_id']
+    new_df['tourney_name'] = df['tourney_name']
+    new_df['tourney_date'] = df['tourney_date']
+    new_df['surface'] = df['surface']
+    new_df['best_of'] = df['best_of']
+    new_df['match_num'] = df['match_num']
     
-#     new_df['a_player_id'] = df['winner_id']
-#     new_df['a_player_name'] = df['winner_name']
+    new_df['a_player_id'] = df['winner_id']
+    new_df['a_player_name'] = df['winner_name']
     
-#     new_df['b_player_id'] = df['loser_id']
-#     new_df['b_player_name'] = df['loser_name']
+    new_df['b_player_id'] = df['loser_id']
+    new_df['b_player_name'] = df['loser_name']
     
-#     # Fill the rest of the columns with empty strings
-#     for col in new_game_header:
-#         if col not in new_df.columns:
-#             new_df[col] = ''
+    # Fill the rest of the columns with empty strings
+    for col in new_game_header:
+        if col not in new_df.columns:
+            new_df[col] = ''
     
-#     return new_df
+    return new_df
 
 # async def compute_game(df: pd.DataFrame, game):
     return

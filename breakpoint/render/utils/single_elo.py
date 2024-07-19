@@ -7,7 +7,7 @@ import traceback
 import numpy as np
 from render.utils.elo_functions import *
 
-async def gather_elos(df: pd.DataFrame):
+async def gather_elos(df: pd.DataFrame, enddate: datetime.date):
     # Changing dataframe fix for future
     w1_iloc = df.columns.get_loc('w1')
     w_ace_iloc = df.columns.get_loc('w_ace')
@@ -68,5 +68,5 @@ async def gather_elos(df: pd.DataFrame):
 
     pbar.close()
 
-    players_elo = await filter_games(players_elo)
+    players_elo = await filter_games(players_elo, enddate)
     return players_elo

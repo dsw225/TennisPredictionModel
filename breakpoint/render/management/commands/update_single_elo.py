@@ -43,7 +43,7 @@ class Command(BaseCommand):
 
         try:
             games = await self.get_games_in_span(start_date, end_date, type, surface)
-            player_elos = await elos.gather_elos(games)
+            player_elos = await elos.gather_elos(games, end_date)
             await self.add_data_to_model(player_elos, insert_db)
             print(f"Successfully added {surface if surface else 'full'} model")
         except Exception as e:

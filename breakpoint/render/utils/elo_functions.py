@@ -1,4 +1,6 @@
 from math import pow, copysign, floor, ceil
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
 import pandas as pd
 import numpy as np
 import traceback
@@ -22,11 +24,12 @@ POINT_K_FACTOR = 1
 GAME_K_FACTOR = 1
 SET_K_FACTOR = 1
 
-async def filter_games(df: pd.DataFrame):
+async def filter_games(df: pd.DataFrame, end_date : datetime.date):
     warnings.filterwarnings("ignore", category=FutureWarning, message="Comparison of Timestamp with datetime.date is deprecated")
     df['last_date'] = pd.to_datetime(df['last_date'])
     df = df[~(
-                (df['matches_played'] < MIN_MATCHES)
+                (df['matches_played'] < MIN_MATCHES) |
+                (df['last_date'].dt.date < (end_date - relativedelta(years=1)))
             )]
     df = df.sort_values(by='elo_rating', ascending=False)
     return df
