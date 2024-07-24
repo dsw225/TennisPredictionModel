@@ -275,9 +275,12 @@ class MensTennisMatchStats(models.Model):
     a_player_id = models.IntegerField(null=True, blank=True)
     a_player_name = models.CharField(max_length=100)
     a_player_slug = models.CharField(max_length=100, null=True, blank=True)
+    a_player_rank = models.IntegerField(null=True, blank=True)
     b_player_id = models.IntegerField(null=True, blank=True)
     b_player_name = models.CharField(max_length=100)
     b_player_slug = models.CharField(max_length=100, null=True, blank=True)
+    b_player_rank = models.IntegerField(null=True, blank=True)
+
     a_elo_rating = models.IntegerField(null=True, blank=True)
     a_point_elo_rating = models.IntegerField(null=True, blank=True)
     a_game_elo_rating = models.IntegerField(null=True, blank=True)
@@ -331,12 +334,16 @@ class WomensTennisMatchStats(models.Model):
     surface = models.CharField(max_length=20)
     best_of = models.IntegerField()
     match_num = models.IntegerField()
+    
     a_player_id = models.IntegerField(null=True, blank=True)
     a_player_name = models.CharField(max_length=100)
     a_player_slug = models.CharField(max_length=100, null=True, blank=True)
+    a_player_rank = models.IntegerField(null=True, blank=True)
     b_player_id = models.IntegerField(null=True, blank=True)
     b_player_name = models.CharField(max_length=100)
     b_player_slug = models.CharField(max_length=100, null=True, blank=True)
+    b_player_rank = models.IntegerField(null=True, blank=True)
+
     a_elo_rating = models.IntegerField(null=True, blank=True)
     a_point_elo_rating = models.IntegerField(null=True, blank=True)
     a_game_elo_rating = models.IntegerField(null=True, blank=True)
@@ -380,3 +387,5 @@ class WomensTennisMatchStats(models.Model):
     b_matches_played = models.IntegerField()
     
     a_b_win = models.IntegerField()
+    a_odds = models.FloatField(null=True, blank=True)
+    b_odds = models.FloatField(null=True, blank=True)

@@ -7,6 +7,7 @@ import random
 import traceback
 import numpy as np
 from render.utils.elo_functions import *
+import arff
 
 async def prior_games(df: pd.DataFrame, enddate: datetime.date):
     # Changing dataframe fix for future
@@ -64,9 +65,11 @@ async def prior_games(df: pd.DataFrame, enddate: datetime.date):
         'a_player_id',
         'a_player_name',
         'a_player_slug',
+        'a_player_rank',
         'b_player_id',
         'b_player_name',
         'b_player_slug',
+        'b_player_rank',
         'a_elo_rating',
         'a_point_elo_rating',
         'a_game_elo_rating',
@@ -150,24 +153,23 @@ async def prior_games(df: pd.DataFrame, enddate: datetime.date):
 
     pbar.close()
 
+    new_format.to_csv('testout.csv', index=False)
+
     return new_format
-
-    # players_elo = await filter_games(players_elo, enddate)
-    # grass_players_elo = await filter_games(grass_players_elo, enddate)
-    # clay_players_elo = await filter_games(clay_players_elo, enddate)
-    # hard_players_elo = await filter_games(hard_players_elo, enddate)
-
-    # return players_elo, grass_players_elo, clay_players_elo, hard_players_elo
 
 async def create_new_game_df(game, players_elo, player_surface_elos):
     w_player = game['winner_name'] #Change to ID later
     l_player = game['loser_name'] #Change to ID later
+    w_rank = game['winner_rank']
+    l_rank = game['loser_rank']
 
     if random.choice([True, False]):
         player_a, player_b = w_player, l_player
+        player_a_rank, player_b_rank = w_rank, l_rank
         a_b_win = 1
     else:
         player_a, player_b = l_player, w_player
+        player_a_rank, player_b_rank = l_rank, w_rank
         a_b_win = 0
 
     a_player_elos = players_elo[players_elo['player'] == player_a]
@@ -187,9 +189,11 @@ async def create_new_game_df(game, players_elo, player_surface_elos):
         0,
         player_a,
         '',
+        player_a_rank,
         0,
         player_b,
         '',
+        player_b_rank,
         a_player_elos['elo_rating'],
         a_player_elos['point_elo_rating'],
         a_player_elos['game_elo_rating'],
@@ -234,63 +238,5 @@ async def create_new_game_df(game, players_elo, player_surface_elos):
         0,
         0
     ]
-
-    # game_entry = {
-    #     'tourney_id': game['tourney_id'],
-    #     'tourney_name': game['tourney_name'],
-    #     'tourney_date': game['tourney_date'],
-    #     'surface': game['surface'],
-    #     'best_of': game['best_of'],
-    #     'match_num': game['match_num'],
-    #     'a_player_id': '',
-    #     'a_player_name': player_a,
-    #     'a_player_slug': '',
-    #     'b_player_id': '',
-    #     'b_player_name': player_b,
-    #     'b_player_slug': '',
-    #     'a_elo_rating': a_player_elos.get('elo_rating', 0),
-    #     'a_point_elo_rating': a_player_elos.get('point_elo_rating', 0),
-    #     'a_game_elo_rating': a_player_elos.get('game_elo_rating', 0),
-    #     'a_set_elo_rating': a_player_elos.get('set_elo_rating', 0),
-    #     'a_service_game_elo_rating': a_player_elos.get('service_game_elo_rating', 0),
-    #     'a_return_game_elo_rating': a_player_elos.get('return_game_elo_rating', 0),
-    #     'a_tie_break_elo_rating': a_player_elos.get('tie_break_elo_rating', 0),
-    #     'a_surface_elo_rating': a_surface_elos.get('elo_rating', 0),
-    #     'a_surface_point_elo_rating': a_surface_elos.get('point_elo_rating', 0),
-    #     'a_surface_game_elo_rating': a_surface_elos.get('game_elo_rating', 0),
-    #     'a_surface_set_elo_rating': a_surface_elos.get('set_elo_rating', 0),
-    #     'a_surface_service_game_elo_rating': a_surface_elos.get('service_game_elo_rating', 0),
-    #     'a_surface_return_game_elo_rating': a_surface_elos.get('return_game_elo_rating', 0),
-    #     'a_surface_tie_break_elo_rating': a_surface_elos.get('tie_break_elo_rating', 0),
-    #     'a_win_percent': 0,  # Placeholder, calculate as needed
-    #     'a_serve_rating': 0,  # Placeholder, calculate as needed
-    #     'a_return_rating': 0,  # Placeholder, calculate as needed
-    #     'a_pressure_rating': 0,  # Placeholder, calculate as needed
-    #     'a_avg_vs_elo': 0,  # Placeholder, calculate as needed
-    #     'a_matches_played': 0,
-    #     'b_elo_rating': b_player_elos.get('elo_rating', 0),
-    #     'b_point_elo_rating': b_player_elos.get('point_elo_rating', 0),
-    #     'b_game_elo_rating': b_player_elos.get('game_elo_rating', 0),
-    #     'b_set_elo_rating': b_player_elos.get('set_elo_rating', 0),
-    #     'b_service_game_elo_rating': b_player_elos.get('service_game_elo_rating', 0),
-    #     'b_return_game_elo_rating': b_player_elos.get('return_game_elo_rating', 0),
-    #     'b_tie_break_elo_rating': b_player_elos.get('tie_break_elo_rating', 0),
-    #     'b_surface_elo_rating': b_surface_elos.get('elo_rating', 0),
-    #     'b_surface_point_elo_rating': b_surface_elos.get('point_elo_rating', 0),
-    #     'b_surface_game_elo_rating': b_surface_elos.get('game_elo_rating', 0),
-    #     'b_surface_set_elo_rating': b_surface_elos.get('set_elo_rating', 0),
-    #     'b_surface_service_game_elo_rating': b_surface_elos.get('service_game_elo_rating', 0),
-    #     'b_surface_return_game_elo_rating': b_surface_elos.get('return_game_elo_rating', 0),
-    #     'b_surface_tie_break_elo_rating': b_surface_elos.get('tie_break_elo_rating', 0),
-    #     'b_win_percent': 0,  # Placeholder, calculate as needed
-    #     'b_serve_rating': 0,  # Placeholder, calculate as needed
-    #     'b_return_rating': 0,  # Placeholder, calculate as needed
-    #     'b_pressure_rating': 0,  # Placeholder, calculate as needed
-    #     'b_avg_vs_elo': 0,  # Placeholder, calculate as needed
-    #     'b_matches_played': 0,
-    #     'a_b_win': a_b_win,
-    #     'a_odds': 0,
-    #     'b_odds': 0
-    # }
 
     return game_entry

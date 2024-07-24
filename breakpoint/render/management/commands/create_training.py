@@ -39,7 +39,6 @@ class Command(BaseCommand):
         try:
             games = await self.get_games_in_span(start_date, end_date, type)
             all_games = await compute_games.prior_games(games, end_date)
-            print(type(all_games))
             await self.add_data_to_model(all_games, insert_db)
             print(f"Successfully added model")
         except Exception as e:
@@ -86,9 +85,11 @@ class Command(BaseCommand):
             'a_player_id' : 'a_player_id',
             'a_player_name' : 'a_player_name',
             'a_player_slug' : 'a_player_slug',
+            'a_player_rank' : 'a_player_rank',
             'b_player_id' : 'b_player_id',
             'b_player_name' : 'b_player_name',
             'b_player_slug' : 'b_player_slug',
+            'b_player_rank' : 'b_player_rank',
             'a_elo_rating' : 'a_elo_rating',
             'a_point_elo_rating' : 'a_point_elo_rating',
             'a_game_elo_rating' : 'a_game_elo_rating',
