@@ -6,6 +6,7 @@ import asyncio
 import os
 import django
 from django.db import models
+from render.utils.database_funcs import *
 
 # Setup Django environment
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'breakpoint.settings')
@@ -173,6 +174,8 @@ class Command(BaseCommand):
         await self.insert_dataframe_into_model(matches_df, field_mapping, type, default_values)
 
     async def insert_dataframe_into_model(self, df, field_mapping, type: models.Model, default_values=None):
+        await reset_database(type)
+
         if default_values is None:
             default_values = {}
 
