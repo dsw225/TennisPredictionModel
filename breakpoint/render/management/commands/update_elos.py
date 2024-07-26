@@ -6,7 +6,8 @@ import django
 from django.db import models
 import traceback
 from asgiref.sync import sync_to_async # type: ignore
-import render.utils.single_elo as elos
+import render.utils.single_elo as single_elo
+import render.utils.multiple_elo as multi_elo
 from render.utils.database_funcs import *
 
 # Setup Django environment
@@ -30,22 +31,43 @@ class Command(BaseCommand):
         surface_char = kwargs['surface_char']
 
         surface_type = {
-            'H': "Hard", 'C': "Clay", 'G': "Grass"
+            'H': "Hard", 'C': "Clay", 'G': "Grass", 'F': 'Full'
         }
         surface = surface_type.get(surface_char, None)
 
         if match_type == 'm':   
             type = MensTennisMatch
-            insert_db = MensHardEloStats if surface == "Hard" else MensClayEloStats if surface == "Clay" else MensGrassEloStats if surface == "Grass" else MensFullEloStats
+            if surface is not None:
+                insert_db = MensHardEloStats if surface == "Hard" else MensClayEloStats if surface == "Clay" else MensGrassEloStats if surface == "Grass" else MensFullEloStats
+            else:
+                insert_db = MensFullEloStats
+                grass_db = MensGrassEloStats
+                clay_db = MensClayEloStats
+                hard_db = MensHardEloStats
         else:
             type = WomensTennisMatch
-            insert_db = WomensHardEloStats if surface == "Hard" else WomensClayEloStats if surface == "Clay" else WomensGrassEloStats if surface == "Grass" else WomensFullEloStats
+            if surface is not None:
+                insert_db = WomensHardEloStats if surface == "Hard" else WomensClayEloStats if surface == "Clay" else WomensGrassEloStats if surface == "Grass" else WomensFullEloStats
+            else:
+                insert_db = WomensFullEloStats
+                grass_db = WomensGrassEloStats
+                clay_db = WomensClayEloStats
+                hard_db = WomensHardEloStats
 
         try:
             games = await self.get_games_in_span(start_date, end_date, type, surface)
-            player_elos = await elos.gather_elos(games, end_date)
-            await self.add_data_to_model(player_elos, insert_db)
-            print(f"Successfully added {surface if surface else 'full'} model")
+
+            if surface is not None:
+                player_elos = await single_elo.gather_elos(games, end_date)
+                await self.add_data_to_model(player_elos, insert_db)
+            else:
+                player_elos, grass_player_elos, clay_player_elos, hard_player_elos = await multi_elo.gather_elos(games, end_date)
+                await self.add_data_to_model(player_elos, insert_db)
+                await self.add_data_to_model(grass_player_elos, grass_db)
+                await self.add_data_to_model(clay_player_elos, clay_db)
+                await self.add_data_to_model(hard_player_elos, hard_db)
+
+            print(f"Successfully added {surface if surface is not None else 'every'} model")
         except Exception as e:
             traceback.print_exc()
             raise CommandError(f"Error during async operation: {e}")
@@ -54,7 +76,7 @@ class Command(BaseCommand):
         parser.add_argument('start_date', type=str, help='Start date in YYYYMMDD format')
         parser.add_argument('end_date', type=str, help='End date in YYYYMMDD format')
         parser.add_argument('match_type', type=str, help="Match type: 'm' for men's ATP matches, 'w' for women's WTA matches")
-        parser.add_argument('surface_char', type=str, help="Surface type: H - Hard, C - Clay, G - Grass, Anything Else - All")
+        parser.add_argument('surface_char', type=str, help="Surface type: H - Hard, C - Clay, G - Grass, F - Combined, Anything Else - Compute All")
 
     async def get_games_in_span(self, start, end, type: models.Model, surface):
         try:
@@ -63,7 +85,7 @@ class Command(BaseCommand):
                 tourney_date__range=(start, end)
             ).order_by('tourney_date')
 
-            if surface is not None:
+            if surface is not None and surface != "Full":
                 query = query.filter(surface__iexact=surface)
             
             # Execute the query asynchronously

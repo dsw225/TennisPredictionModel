@@ -72,11 +72,15 @@ async def update_elos(players_elo : pd.DataFrame, row):
                 l_games += row[f"l{i}"]
 
         tie_breaks_played = tie_breaks_won_winner + tie_breaks_won_loser
-
+        
+        primary_elo(players_elo, idxA, idxB, row)
         points_sets_games_elo(players_elo, idxA, idxB, row, w_sets, l_sets, w_games, l_games)
         tb_elo(players_elo, idxA, idxB, row, tie_breaks_won_winner, tie_breaks_won_loser, tie_breaks_played)
-        return_serve_elo(players_elo, idxA, idxB, row)
-        primary_elo(players_elo, idxA, idxB, row)
+        try:
+            return_serve_elo(players_elo, idxA, idxB, row)
+        except Exception as b:
+            print(f"Skip worked {b}")
+            pass #Missing stats ignore
     except Exception as e:
         print(f"An error occurred: {e}")
         traceback.print_exc()

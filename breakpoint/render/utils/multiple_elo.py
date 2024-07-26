@@ -8,18 +8,11 @@ import numpy as np
 from render.utils.elo_functions import *
 
 async def gather_elos(df: pd.DataFrame, enddate: datetime.date):
-    # Changing dataframe fix for future
     w1_iloc = df.columns.get_loc('w1')
-    w_ace_iloc = df.columns.get_loc('w_ace')
-    w_bp_f_iloc = df.columns.get_loc('w_bpFaced')
-    l_ace_iloc = df.columns.get_loc('l_ace')
-    l_bp_f_iloc = df.columns.get_loc('l_bpFaced')
 
     # Basic filter conditions
     conditions = (
-        ~pd.isnull(df.iloc[:, w1_iloc].values) &
-        ~pd.isnull(df.iloc[:, w_ace_iloc:w_bp_f_iloc+1].values).any(axis=1) &
-        ~pd.isnull(df.iloc[:, l_ace_iloc:l_bp_f_iloc+1].values).any(axis=1)
+        ~pd.isnull(df.iloc[:, w1_iloc].values) 
     )
 
     # Filter the DataFrame
