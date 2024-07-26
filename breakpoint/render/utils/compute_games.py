@@ -129,7 +129,6 @@ async def prior_games(df: pd.DataFrame, enddate: datetime.date):
         new_format.iloc[index] = pd.Series(await create_new_game_df(row, players_elo, surface_players_elo))
 
     for index, row in matches_df.iterrows():
-        tasks.append(update_elos_with_progress(players_elo, row))
         if row['surface'] == "Grass":
             tasks.append(update_games(new_format, index, row, players_elo, grass_players_elo))
             tasks.append(update_elos_with_progress(grass_players_elo, row))
@@ -141,6 +140,8 @@ async def prior_games(df: pd.DataFrame, enddate: datetime.date):
             tasks.append(update_elos_with_progress(hard_players_elo, row))
         else:
             pbar.update(1)
+
+        tasks.append(update_elos_with_progress(players_elo, row))
 
         # To avoid accumulating too many tasks, you can process them in smaller batches
         if len(tasks) >= 1000:

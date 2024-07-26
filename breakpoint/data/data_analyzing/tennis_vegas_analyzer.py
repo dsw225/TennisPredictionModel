@@ -1,6 +1,6 @@
 import csv
 import pandas as pd
-file_path = 'data/csvs/WTA (Womens)/Odds/2024.xlsx'
+file_path = 'data/csvs/WTA (Womens)/Odds/2023.xlsx'
 
 data = pd.read_excel(file_path)
 
@@ -21,26 +21,21 @@ for i in range(1, len(data)):
 
     # Favorite Wins
     total += 1
-    if(float(data.loc[i, 'AvgW']) < float(data.loc[i, 'AvgL'])):
-        vegasCorrect += 1
+    if 2 >= float(data.loc[i, 'AvgW']) or 2 >= float(data.loc[i, 'AvgL']):
+        if(float(data.loc[i, 'AvgW']) < float(data.loc[i, 'AvgL'])):
+            vegasCorrect += 1
 
-        # if(float(data.loc[i, 'LRank'])<20):
-        #     underdogTotalUnits -= 1
-        #     right += 1
+            underdogTotalUnits -= 1
+            favoriteTotalUnits += (data.loc[i, 'AvgW'] - 1)
+        elif(float(data.loc[i, 'AvgL']) < float(data.loc[i, 'AvgW'])):
+            vegasWrong += 1
 
-        underdogTotalUnits -= 1
-        favoriteTotalUnits += (data.loc[i, 'AvgW'] - 1)
-    elif(float(data.loc[i, 'AvgL']) < float(data.loc[i, 'AvgW'])):
-        vegasWrong += 1
+            underdogTotalUnits += (data.loc[i, 'AvgW'] - 1)
+            favoriteTotalUnits -= 1
+        else:
+            splitOdds += 1
 
-        # if(float(data.loc[i, 'WRank'])<20):
-        #     underdogTotalUnits += (data.loc[i, 'AvgW'] - 1)
-        #     right += 1
-
-        underdogTotalUnits += (data.loc[i, 'AvgW'] - 1)
-        favoriteTotalUnits -= 1
-    else:
-        splitOdds += 1
+            
 print("Favorite won " + str((float(vegasCorrect)/(vegasCorrect+vegasWrong))*100) + "% of the time")
 print("Favorite Units: " + str(favoriteTotalUnits))
 print("Underdog Units: " + str(underdogTotalUnits))
