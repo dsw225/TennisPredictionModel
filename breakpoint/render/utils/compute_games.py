@@ -163,14 +163,18 @@ async def create_new_game_df(game, players_elo, player_surface_elos):
     l_player = game['loser_name'] #Change to ID later
     w_rank = game['winner_rank']
     l_rank = game['loser_rank']
+    w_odds = game['winner_odds']
+    l_odds = game['loser_odds']
 
     if random.choice([True, False]):
         player_a, player_b = w_player, l_player
         player_a_rank, player_b_rank = w_rank, l_rank
+        player_a_odds, player_b_odds = w_odds, l_odds
         a_b_win = 1
     else:
         player_a, player_b = l_player, w_player
         player_a_rank, player_b_rank = l_rank, w_rank
+        player_a_odds, player_b_odds = l_odds, w_odds
         a_b_win = 0
 
     a_player_elos = players_elo[players_elo['player'] == player_a]
@@ -236,8 +240,8 @@ async def create_new_game_df(game, players_elo, player_surface_elos):
         0,  # Placeholder, calculate as needed
         0,  # Placeholder, calculate as needed
         a_b_win,
-        0,
-        0
+        player_a_odds,
+        player_b_odds
     ]
 
     return game_entry

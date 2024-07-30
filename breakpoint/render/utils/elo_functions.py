@@ -46,32 +46,7 @@ async def update_elos(players_elo : pd.DataFrame, row):
         idxA = player_a.index[0]
         idxB = player_b.index[0]
 
-        sets = 0
-    
-        sets += 1 if not np.isnan(pd.to_numeric(row['w1'], errors='coerce')) and not np.isnan(pd.to_numeric(row['l1'], errors='coerce')) else 0
-        sets += 1 if not np.isnan(pd.to_numeric(row['w2'], errors='coerce')) and not np.isnan(pd.to_numeric(row['l2'], errors='coerce')) else 0
-        sets += 1 if not np.isnan(pd.to_numeric(row['w3'], errors='coerce')) and not np.isnan(pd.to_numeric(row['l3'], errors='coerce')) else 0
-        sets += 1 if not np.isnan(pd.to_numeric(row['w4'], errors='coerce')) and not np.isnan(pd.to_numeric(row['l4'], errors='coerce')) else 0
-        sets += 1 if not np.isnan(pd.to_numeric(row['w5'], errors='coerce')) and not np.isnan(pd.to_numeric(row['l5'], errors='coerce')) else 0
-
-        w_games, l_games = 0, 0
-        w_sets, l_sets = 0, 0
-        tie_breaks_won_winner, tie_breaks_won_loser = 0, 0
-
-        for i in range(1, sets + 1):
-            if not np.isnan(row[f"w{i}"]) and not np.isnan(row[f"l{i}"]):
-                if row[f"w{i}"] == 7 and row[f"l{i}"] == 6:
-                    tie_breaks_won_winner += 1
-                if row[f"l{i}"] == 7 and row[f"w{i}"] == 6:
-                    tie_breaks_won_loser += 1
-                if row[f"w{i}"] > row[f"l{i}"]:
-                    w_sets += 1
-                else:
-                    l_sets += 1
-                w_games += row[f"w{i}"]
-                l_games += row[f"l{i}"]
-
-        tie_breaks_played = tie_breaks_won_winner + tie_breaks_won_loser
+        w_games, l_games, w_sets, l_sets, tie_breaks_won_winner, tie_breaks_won_loser, tie_breaks_played = get_score_stats(row)
         
         primary_elo(players_elo, idxA, idxB, row)
         points_sets_games_elo(players_elo, idxA, idxB, row, w_sets, l_sets, w_games, l_games)
@@ -85,6 +60,36 @@ async def update_elos(players_elo : pd.DataFrame, row):
         print(f"An error occurred: {e}")
         traceback.print_exc()
         pass
+
+def get_score_stats(row):
+    sets = 0
+
+    sets += 1 if not np.isnan(pd.to_numeric(row['w1'], errors='coerce')) and not np.isnan(pd.to_numeric(row['l1'], errors='coerce')) else 0
+    sets += 1 if not np.isnan(pd.to_numeric(row['w2'], errors='coerce')) and not np.isnan(pd.to_numeric(row['l2'], errors='coerce')) else 0
+    sets += 1 if not np.isnan(pd.to_numeric(row['w3'], errors='coerce')) and not np.isnan(pd.to_numeric(row['l3'], errors='coerce')) else 0
+    sets += 1 if not np.isnan(pd.to_numeric(row['w4'], errors='coerce')) and not np.isnan(pd.to_numeric(row['l4'], errors='coerce')) else 0
+    sets += 1 if not np.isnan(pd.to_numeric(row['w5'], errors='coerce')) and not np.isnan(pd.to_numeric(row['l5'], errors='coerce')) else 0
+
+    w_games, l_games = 0, 0
+    w_sets, l_sets = 0, 0
+    tie_breaks_won_winner, tie_breaks_won_loser = 0, 0
+
+    for i in range(1, sets + 1):
+        if not np.isnan(row[f"w{i}"]) and not np.isnan(row[f"l{i}"]):
+            if row[f"w{i}"] == 7 and row[f"l{i}"] == 6:
+                tie_breaks_won_winner += 1
+            if row[f"l{i}"] == 7 and row[f"w{i}"] == 6:
+                tie_breaks_won_loser += 1
+            if row[f"w{i}"] > row[f"l{i}"]:
+                w_sets += 1
+            else:
+                l_sets += 1
+            w_games += row[f"w{i}"]
+            l_games += row[f"l{i}"]
+
+    tie_breaks_played = tie_breaks_won_winner + tie_breaks_won_loser
+
+    return w_games, l_games, w_sets, l_sets, tie_breaks_won_winner, tie_breaks_won_loser, tie_breaks_played
 
 def update_dataframe(players_elo : pd.DataFrame, player_idx, col, value):
     players_elo.at[player_idx, col] = value

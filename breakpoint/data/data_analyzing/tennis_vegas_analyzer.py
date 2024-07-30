@@ -21,7 +21,7 @@ for i in range(1, len(data)):
 
     # Favorite Wins
     total += 1
-    if 2 >= float(data.loc[i, 'AvgW']) or 2 >= float(data.loc[i, 'AvgL']):
+    if 1.25 >= float(data.loc[i, 'AvgW']) or 1.25 >= float(data.loc[i, 'AvgL']):
         if(float(data.loc[i, 'AvgW']) < float(data.loc[i, 'AvgL'])):
             vegasCorrect += 1
 

@@ -39,7 +39,7 @@ class Command(BaseCommand):
         try:
             games = await self.get_games_in_span(start_date, end_date, type)
             all_games = await compute_games.prior_games(games, end_date)
-            await self.add_data_to_model(all_games, insert_db)
+            # await self.add_data_to_model(all_games, insert_db)
             print(f"Successfully added model")
         except Exception as e:
             traceback.print_exc()

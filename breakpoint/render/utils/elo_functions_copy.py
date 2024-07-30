@@ -1,5 +1,5 @@
 from math import pow, copysign, floor, ceil
-from datetime import datetime
+from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 import pandas as pd
 import numpy as np
@@ -15,6 +15,7 @@ K_FUNCTION_MULTIPLIER = 2.0 * (K_FUNCTION_AMPLIFIER - 1.0)
 
 DELTA_RATING_CAP = 200.0
 MIN_MATCHES = 5
+RECENT_WEEKS = 56
 RECENT_K_GAIN_FACTOR = 2
 
 # K_Factors in case adding league signifigance in future
@@ -34,7 +35,7 @@ async def filter_games(df: pd.DataFrame, end_date : datetime.date):
     df = df.sort_values(by='elo_rating', ascending=False)
     return df
 
-async def update_elos(players_elo : pd.DataFrame, row, match_date):
+async def update_elos(players_elo : pd.DataFrame, row):
     try:
         player_a = players_elo[players_elo['player'] == row["winner_name"]]
         player_b = players_elo[players_elo['player'] == row["loser_name"]]
@@ -45,53 +46,42 @@ async def update_elos(players_elo : pd.DataFrame, row, match_date):
 
         idxA = player_a.index[0]
         idxB = player_b.index[0]
-
-        sets = 0
-    
-        sets += 1 if not np.isnan(pd.to_numeric(row['w1'], errors='coerce')) and not np.isnan(pd.to_numeric(row['l1'], errors='coerce')) else 0
-        sets += 1 if not np.isnan(pd.to_numeric(row['w2'], errors='coerce')) and not np.isnan(pd.to_numeric(row['l2'], errors='coerce')) else 0
-        sets += 1 if not np.isnan(pd.to_numeric(row['w3'], errors='coerce')) and not np.isnan(pd.to_numeric(row['l3'], errors='coerce')) else 0
-        sets += 1 if not np.isnan(pd.to_numeric(row['w4'], errors='coerce')) and not np.isnan(pd.to_numeric(row['l4'], errors='coerce')) else 0
-        sets += 1 if not np.isnan(pd.to_numeric(row['w5'], errors='coerce')) and not np.isnan(pd.to_numeric(row['l5'], errors='coerce')) else 0
-
-        w_games, l_games = 0, 0
-        w_sets, l_sets = 0, 0
-        tie_breaks_won_winner, tie_breaks_won_loser = 0, 0
-
-        for i in range(1, sets + 1):
-            if not np.isnan(row[f"w{i}"]) and not np.isnan(row[f"l{i}"]):
-                if row[f"w{i}"] == 7 and row[f"l{i}"] == 6:
-                    tie_breaks_won_winner += 1
-                if row[f"l{i}"] == 7 and row[f"w{i}"] == 6:
-                    tie_breaks_won_loser += 1
-                if row[f"w{i}"] > row[f"l{i}"]:
-                    w_sets += 1
-                else:
-                    l_sets += 1
-                w_games += row[f"w{i}"]
-                l_games += row[f"l{i}"]
-
-        tie_breaks_played = tie_breaks_won_winner + tie_breaks_won_loser
-
-        # CALL RECENT ELO CALC HERE
-
-
-
-
-
-
-
-
-
-
-
-
         
-        primary_elo(players_elo, idxA, idxB, row)
-        points_sets_games_elo(players_elo, idxA, idxB, row, w_sets, l_sets, w_games, l_games)
-        tb_elo(players_elo, idxA, idxB, row, tie_breaks_won_winner, tie_breaks_won_loser, tie_breaks_played)
+        w_games, l_games, w_sets, l_sets, tie_breaks_won_winner, tie_breaks_won_loser, tie_breaks_played = get_score_stats(row)
+
+        #Primary update
+        match_date = row['tourney_date']
+        match_num = row['match_num']
+        rA_new, rB_new = primary_elo(players_elo.at[idxA, 'elo_rating'], players_elo.at[idxB, 'elo_rating'], row)
+        update_primary_elo(players_elo, idxA, idxB, rA_new, rB_new, match_date, match_num)
+        
+        # Point Sets etc.
+        rAset = players_elo.at[idxA, 'set_elo_rating']
+        rBset = players_elo.at[idxB, 'set_elo_rating']
+
+        rAgame = players_elo.at[idxA, 'game_elo_rating']
+        rBgame = players_elo.at[idxB, 'game_elo_rating']
+
+        rApoint = players_elo.at[idxA, 'point_elo_rating']
+        rBpoint = players_elo.at[idxB, 'point_elo_rating']
+
+        rApointNew, rBpointNew, rAsetNew, rBsetNew, rAgameNew, rBgameNew = points_sets_games_elo(rAset, rBset, rAgame, rBgame, rApoint, rBpoint, row, w_sets, l_sets, w_games, l_games)
+        update_points_sets_games_elo(players_elo, idxA, idxB, rApointNew, rBpointNew, rAsetNew, rBsetNew, rAgameNew, rBgameNew)
+
+        # TB Update
+        rAtbNew, rBtbNew = tb_elo(players_elo.at[idxA, 'tie_break_elo_rating'], players_elo.at[idxB, 'tie_break_elo_rating'], row, tie_breaks_won_winner, tie_breaks_won_loser, tie_breaks_played)
+        update_tb_elo(players_elo, idxA, idxB, rAtbNew, rBtbNew)
+
+        # Serve/Return Update
         try:
-            return_serve_elo(players_elo, idxA, idxB, row)
+            rAservice = players_elo.at[idxA, 'service_game_elo_rating']
+            rBservice = players_elo.at[idxB, 'service_game_elo_rating']
+
+            rAreturn = players_elo.at[idxA, 'return_game_elo_rating']
+            rBreturn = players_elo.at[idxB, 'return_game_elo_rating']
+
+            rAserviceNew, rBserviceNew, rAreturnNew, rBreturnNew = return_serve_elo(rAservice, rBservice, rAreturn, rBreturn, row)
+            update_return_serve_elo(players_elo, idxA, idxB, rAserviceNew, rBserviceNew, rAreturnNew, rBreturnNew)
         except Exception as b:
             print(f"Skip worked {b}")
             pass #Missing stats ignore
@@ -100,42 +90,178 @@ async def update_elos(players_elo : pd.DataFrame, row, match_date):
         traceback.print_exc()
         pass
 
+async def parse_recent(recent_matches_a: pd.DataFrame, recent_matches_b: pd.DataFrame, game):
+    game_date = game['tourney_date']
+
+    player_a = game["winner_name"]
+    player_b = game["loser_name"]
+
+    recent_matches_a = recent_matches_a[~(
+        recent_matches_a['tourney_date'] < (game_date - timedelta(weeks=RECENT_WEEKS)) 
+    )]
+    recent_matches_a = recent_matches_a.sort_values(by='tourney_date', ascending=False)
+
+    recent_matches_b = recent_matches_b[~(
+        recent_matches_b['tourney_date'] < (game_date - timedelta(weeks=RECENT_WEEKS)) 
+    )]
+    recent_matches_b = recent_matches_b.sort_values(by='tourney_date', ascending=False)
+
+    player_a_stats = await process_player_matches(player_a, recent_matches_a, game)
+    player_b_stats = await process_player_matches(player_b, recent_matches_b, game)
+
+    player_a_entry = game.copy()
+    player_a_entry.update(player_a_stats)
+
+    player_b_entry = game.copy()
+    player_b_entry.update(player_b_stats)
+
+    # Append the data to the DataFrames
+    recent_matches_a = pd.concat([recent_matches_a, pd.DataFrame([player_a_entry])], ignore_index=True)
+    recent_matches_b = pd.concat([recent_matches_b, pd.DataFrame([player_b_entry])], ignore_index=True)
+
+    return player_a_stats, player_b_stats, recent_matches_a, recent_matches_b
+    
+# Function to process matches for a specific player
+async def process_player_matches(player, recent_matches: pd.DataFrame, game):
+    game_date = game['tourney_date']
+
+    recent_matches = recent_matches.sort_values(by='tourney_date', ascending=False)
+
+    recent_match_number = -1
+    recent_matches_played = 0
+    recent_elo_rating = START_RATING
+    recent_point_elo_rating = START_RATING
+    recent_game_elo_rating = START_RATING
+    recent_set_elo_rating = START_RATING
+    recent_service_game_elo_rating = START_RATING
+    recent_return_game_elo_rating = START_RATING
+    recent_tie_break_elo_rating = START_RATING
+    
+    print(game)
+
+    for index, row in recent_matches.iterrows():
+        recent_match_number = row['match_num']
+        recent_matches_played += 1
+
+        if row["winner_name"] == player:
+            w_games, l_games, w_sets, l_sets, tie_breaks_won_winner, tie_breaks_won_loser, tie_breaks_played = get_score_stats(row)
+
+            opponent_elo = row['oppo_elo_rating']
+            opponent_set_elo = row['oppo_set_elo_rating']
+            opponent_game_elo = row['oppo_game_elo_rating']
+            opponent_point_elo = row['oppo_elo_rating']
+            opponent_tb_elo = row['oppo_tb_elo_rating']
+            opponent_service_elo = row['oppo_service_elo_rating']
+            opponent_return_elo = row['oppo_return_elo_rating']
+
+            # Primary update
+            recent_elo_rating, _ = primary_elo(recent_elo_rating, opponent_elo, row)
+            
+            # Point Sets etc.
+            recent_point_elo_rating, _, recent_set_elo_rating, _, recent_game_elo_rating, _ = points_sets_games_elo(
+                recent_set_elo_rating, opponent_set_elo, recent_game_elo_rating, opponent_game_elo,
+                recent_point_elo_rating, opponent_point_elo, row, w_sets, l_sets, w_games, l_games
+            )
+
+            # TB Update
+            recent_tie_break_elo_rating, _ = tb_elo(recent_tie_break_elo_rating, opponent_tb_elo, row, tie_breaks_won_winner, tie_breaks_won_loser, tie_breaks_played)
+
+            # Serve/Return Update
+            try:
+                recent_service_game_elo_rating, _, recent_return_game_elo_rating, _ = return_serve_elo(
+                    recent_service_game_elo_rating, opponent_service_elo, recent_return_game_elo_rating, opponent_return_elo, row
+                )
+            except Exception as e:
+                print(f"Skip worked {e}")
+                pass  # Missing stats ignore
+
+        else:
+            w_games, l_games, w_sets, l_sets, tie_breaks_won_winner, tie_breaks_won_loser, tie_breaks_played = get_score_stats(row)
+
+            opponent_elo = row['oppo_elo_rating']
+            opponent_set_elo = row['oppo_set_elo_rating']
+            opponent_game_elo = row['oppo_game_elo_rating']
+            opponent_point_elo = row['oppo_elo_rating']
+            opponent_tb_elo = row['oppo_tb_elo_rating']
+            opponent_service_elo = row['oppo_service_elo_rating']
+            opponent_return_elo = row['oppo_return_elo_rating']
+
+            # Primary update
+            _, recent_elo_rating = primary_elo(opponent_elo, recent_elo_rating, row)
+            
+            # Point Sets etc.
+            _, recent_point_elo_rating, _, recent_set_elo_rating, _, recent_game_elo_rating = points_sets_games_elo(
+                opponent_set_elo, recent_set_elo_rating, opponent_game_elo, recent_game_elo_rating,
+                opponent_point_elo, recent_point_elo_rating, row, w_sets, l_sets, w_games, l_games
+            )
+
+            # TB Update
+            _, recent_tie_break_elo_rating = tb_elo(opponent_tb_elo, recent_tie_break_elo_rating, row, tie_breaks_won_winner, tie_breaks_won_loser, tie_breaks_played)
+
+            # Serve/Return Update
+            try:
+                _, recent_service_game_elo_rating, _, recent_return_game_elo_rating = return_serve_elo(
+                    opponent_service_elo, recent_service_game_elo_rating, opponent_return_elo, recent_return_game_elo_rating, row
+                )
+            except Exception as e:
+                print(f"Skip worked {e}")
+                pass  # Missing stats ignore
+
+    return [recent_match_number, recent_matches_played, recent_elo_rating, recent_point_elo_rating, recent_game_elo_rating, recent_set_elo_rating, recent_service_game_elo_rating, recent_return_game_elo_rating, recent_tie_break_elo_rating]
+
+def get_score_stats(row):
+    sets = 0
+
+    sets += 1 if not np.isnan(pd.to_numeric(row['w1'], errors='coerce')) and not np.isnan(pd.to_numeric(row['l1'], errors='coerce')) else 0
+    sets += 1 if not np.isnan(pd.to_numeric(row['w2'], errors='coerce')) and not np.isnan(pd.to_numeric(row['l2'], errors='coerce')) else 0
+    sets += 1 if not np.isnan(pd.to_numeric(row['w3'], errors='coerce')) and not np.isnan(pd.to_numeric(row['l3'], errors='coerce')) else 0
+    sets += 1 if not np.isnan(pd.to_numeric(row['w4'], errors='coerce')) and not np.isnan(pd.to_numeric(row['l4'], errors='coerce')) else 0
+    sets += 1 if not np.isnan(pd.to_numeric(row['w5'], errors='coerce')) and not np.isnan(pd.to_numeric(row['l5'], errors='coerce')) else 0
+
+    w_games, l_games = 0, 0
+    w_sets, l_sets = 0, 0
+    tie_breaks_won_winner, tie_breaks_won_loser = 0, 0
+
+    for i in range(1, sets + 1):
+        if not np.isnan(row[f"w{i}"]) and not np.isnan(row[f"l{i}"]):
+            if row[f"w{i}"] == 7 and row[f"l{i}"] == 6:
+                tie_breaks_won_winner += 1
+            if row[f"l{i}"] == 7 and row[f"w{i}"] == 6:
+                tie_breaks_won_loser += 1
+            if row[f"w{i}"] > row[f"l{i}"]:
+                w_sets += 1
+            else:
+                l_sets += 1
+            w_games += row[f"w{i}"]
+            l_games += row[f"l{i}"]
+
+    tie_breaks_played = tie_breaks_won_winner + tie_breaks_won_loser
+
+    return w_games, l_games, w_sets, l_sets, tie_breaks_won_winner, tie_breaks_won_loser, tie_breaks_played
+
 def update_dataframe(players_elo : pd.DataFrame, player_idx, col, value):
     players_elo.at[player_idx, col] = value
 
-def primary_elo(players_elo : pd.DataFrame, idxA, idxB, row):
-    rA = players_elo.at[idxA, 'elo_rating']
-    rB = players_elo.at[idxB, 'elo_rating']
-
+def primary_elo(rA, rB, row):
     delta = delta_rating(rA, rB, "N/A")
 
     rA_new = new_rating(rA, delta, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A")
     rB_new = new_rating(rB, -delta, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A")
 
-    match_date = row['tourney_date']
-    match_num = row['match_num']
-    
+    return rA_new, rB_new
+
+def update_primary_elo(players_elo : pd.DataFrame, idxA, idxB, rA_new, rB_new, match_date, match_num):
     update_dataframe(players_elo, idxA, 'elo_rating', rA_new)
     update_dataframe(players_elo, idxA, 'last_date', match_date)
     update_dataframe(players_elo, idxA, 'match_number', match_num)
     update_dataframe(players_elo, idxA, 'matches_played', players_elo.at[idxA, 'matches_played'] + 1)
-
     update_dataframe(players_elo, idxB, 'elo_rating', rB_new)
     update_dataframe(players_elo, idxB, 'last_date', match_date)
     update_dataframe(players_elo, idxB, 'match_number', match_num)
     update_dataframe(players_elo, idxB, 'matches_played', players_elo.at[idxB, 'matches_played'] + 1)
 
 # Stolen and changed from https://github.com/mcekovic/tennis-crystal-ball/blob/master/tennis-stats/src/main/java/org/strangeforest/tcb/stats/model/elo/EloCalculator.java need to implement
-def points_sets_games_elo(players_elo : pd.DataFrame, idxA, idxB, row, w_sets, l_sets, w_games, l_games):
-    rAset = players_elo.at[idxA, 'set_elo_rating']
-    rBset = players_elo.at[idxB, 'set_elo_rating']
-
-    rAgame = players_elo.at[idxA, 'game_elo_rating']
-    rBgame = players_elo.at[idxB, 'game_elo_rating']
-
-    rApoint = players_elo.at[idxA, 'point_elo_rating']
-    rBpoint = players_elo.at[idxB, 'point_elo_rating']
-
+def points_sets_games_elo(rAset, rBset, rAgame, rBgame, rApoint, rBpoint, row, w_sets, l_sets, w_games, l_games):
     wDeltaPoint = delta_rating(rApoint, rBpoint, 'N/A')
     lDeltaPoint = 1 - wDeltaPoint
     wDeltaSet = delta_rating(rAset, rBset, 'N/A')
@@ -154,39 +280,48 @@ def points_sets_games_elo(players_elo : pd.DataFrame, idxA, idxB, row, w_sets, l
     deltaSetNew =  SET_K_FACTOR * (wDeltaSet * (w_sets/(w_sets+l_sets)) - lDeltaSet * (l_sets/(w_sets+l_sets))) if w_sets+w_sets > 0 else 0
     deltaGameNew = GAME_K_FACTOR * (wDeltaGame * (w_games/(w_games+l_games)) - lDeltaGame * (l_games/(w_games+l_games))) if w_sets+l_sets > 0 else 0
 
-    update_dataframe(players_elo, idxA, 'point_elo_rating', new_rating(rApoint, deltaPointNew, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A"))
-    update_dataframe(players_elo, idxB, 'point_elo_rating', new_rating(rBpoint, -deltaPointNew, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A"))
+    rApointNew = new_rating(rApoint, deltaPointNew, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A")
+    rBpointNew = new_rating(rBpoint, -deltaPointNew, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A")
+    rAsetNew = new_rating(rAset, deltaSetNew, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A")
+    rBsetNew = new_rating(rBset, -deltaSetNew, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A")
+    rAgameNew = new_rating(rAgame, deltaGameNew, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A")
+    rBgameNew = new_rating(rBgame, -deltaGameNew, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A")
+    
+    return rApointNew, rBpointNew, rAsetNew, rBsetNew, rAgameNew, rBgameNew
 
-    update_dataframe(players_elo, idxA, 'set_elo_rating', new_rating(rAset, deltaSetNew, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A"))
-    update_dataframe(players_elo, idxB, 'set_elo_rating', new_rating(rBset, -deltaSetNew, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A"))
+def update_points_sets_games_elo(players_elo : pd.DataFrame, idxA, idxB, rApointNew, rBpointNew, rAsetNew, rBsetNew, rAgameNew, rBgameNew):
+    update_dataframe(players_elo, idxA, 'point_elo_rating', rApointNew)
+    update_dataframe(players_elo, idxB, 'point_elo_rating', rBpointNew)
 
-    update_dataframe(players_elo, idxA, 'game_elo_rating', new_rating(rAgame, deltaGameNew, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A"))
-    update_dataframe(players_elo, idxB, 'game_elo_rating', new_rating(rBgame, -deltaGameNew, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A"))
+    update_dataframe(players_elo, idxA, 'set_elo_rating', rAsetNew)
+    update_dataframe(players_elo, idxB, 'set_elo_rating', rBsetNew)
 
-def tb_elo(players_elo : pd.DataFrame, idxA, idxB, row, tie_breaks_won_winner, tie_breaks_won_loser, tie_breaks_played):
-    rAtb = players_elo.at[idxA, 'tie_break_elo_rating']
-    rBtb = players_elo.at[idxB, 'tie_break_elo_rating']
+    update_dataframe(players_elo, idxA, 'game_elo_rating', rAgameNew)
+    update_dataframe(players_elo, idxB, 'game_elo_rating', rBgameNew)
 
+def tb_elo(rAtb, rBtb, row, tie_breaks_won_winner, tie_breaks_won_loser, tie_breaks_played):
     tb_winner = tie_breaks_won_winner/tie_breaks_played if tie_breaks_played > 0 else 0
     tb_loser = tie_breaks_won_loser/tie_breaks_played if tie_breaks_played > 0 else 0
 
     w_delta = delta_rating(rAtb, rBtb, "N/A")
     l_delta = 1 - w_delta
 
+    rAtbNew, rBtbNew = rAtb, rBtb
+
     if tie_breaks_played > 0:
         new_delta = TB_K_FACTOR * (w_delta * tb_winner - l_delta * tb_loser)
 
-        update_dataframe(players_elo, idxA, 'tie_break_elo_rating', new_rating(rAtb, new_delta, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A"))
-        update_dataframe(players_elo, idxB, 'tie_break_elo_rating', new_rating(rBtb, -new_delta, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A"))
+        rAtbNew = new_rating(rAtb, new_delta, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A")
+        rBtbNew = new_rating(rBtb, -new_delta, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A")
 
-def return_serve_elo(players_elo : pd.DataFrame, idxA, idxB, row):
+    return rAtbNew, rBtbNew
+
+def update_tb_elo(players_elo : pd.DataFrame, idxA, idxB, rAtbNew, rBtbNew):
+    update_dataframe(players_elo, idxA, 'tie_break_elo_rating', rAtbNew)
+    update_dataframe(players_elo, idxB, 'tie_break_elo_rating', rBtbNew)
+
+def return_serve_elo(rAservice, rBservice, rAreturn, rBreturn, row):
     surface = row['surface']
-
-    rAservice = players_elo.at[idxA, 'service_game_elo_rating']
-    rBservice = players_elo.at[idxB, 'service_game_elo_rating']
-
-    rAreturn = players_elo.at[idxA, 'return_game_elo_rating']
-    rBreturn = players_elo.at[idxB, 'return_game_elo_rating']
 
     playerA_serveRating = serve_rating(row['w_bpFaced'], row['w_bpSaved'], row['w_SvGms'])
     playerB_serveRating = serve_rating(row['l_bpFaced'], row['l_bpSaved'], row['l_SvGms'])
@@ -205,11 +340,19 @@ def return_serve_elo(players_elo : pd.DataFrame, idxA, idxB, row):
     delta_aReturn = 1 - delta_bServe
     new_delta_bServe = SERVE_RETURN_K_FACTOR * (delta_bServe * (playerB_serveRating/(playerB_serveRating + playerA_returnRating * ratio)) - delta_aReturn * (playerA_returnRating * ratio/(playerB_serveRating + playerA_returnRating * ratio)))
 
-    update_dataframe(players_elo, idxA, 'service_game_elo_rating', new_rating(rAservice, new_delta_aServe, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A"))
-    update_dataframe(players_elo, idxB, 'service_game_elo_rating', new_rating(rBservice, new_delta_bServe, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A"))
+    rAserviceNew = new_rating(rAservice, new_delta_aServe, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A")
+    rBserviceNew = new_rating(rBservice, new_delta_bServe, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A")
+    rAreturnNew = new_rating(rAreturn, -new_delta_bServe, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A")
+    rBreturnNew = new_rating(rBreturn, -new_delta_aServe, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A")
 
-    update_dataframe(players_elo, idxA, 'return_game_elo_rating', new_rating(rAreturn, -new_delta_bServe, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A"))
-    update_dataframe(players_elo, idxB, 'return_game_elo_rating', new_rating(rBreturn, -new_delta_aServe, row['tourney_level'], row['tourney_name'], row['round'], int(row['best_of']), "N/A"))
+    return rAserviceNew, rBserviceNew, rAreturnNew, rBreturnNew
+
+def update_return_serve_elo(players_elo : pd.DataFrame, idxA, idxB, rAserviceNew, rBserviceNew, rAreturnNew, rBreturnNew):
+    update_dataframe(players_elo, idxA, 'service_game_elo_rating', rAserviceNew)
+    update_dataframe(players_elo, idxB, 'service_game_elo_rating', rBserviceNew)
+
+    update_dataframe(players_elo, idxA, 'return_game_elo_rating', rAreturnNew)
+    update_dataframe(players_elo, idxB, 'return_game_elo_rating', rBreturnNew)
 
 def k_factor(level, tourney_name, round, best_of, outcome):
     k = K_FACTOR
