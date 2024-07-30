@@ -109,39 +109,29 @@ async def parse_recent(recent_matches_a: pd.DataFrame, recent_matches_b: pd.Data
     player_a_stats = await process_player_matches(player_a, recent_matches_a, game)
     player_b_stats = await process_player_matches(player_b, recent_matches_b, game)
 
-    player_a_entry = game.copy()
-    player_a_entry.update(player_a_stats)
+import pandas as pd
 
-    player_b_entry = game.copy()
-    player_b_entry.update(player_b_stats)
-
-    # Append the data to the DataFrames
-    recent_matches_a = pd.concat([recent_matches_a, pd.DataFrame([player_a_entry])], ignore_index=True)
-    recent_matches_b = pd.concat([recent_matches_b, pd.DataFrame([player_b_entry])], ignore_index=True)
-
-    return player_a_stats, player_b_stats, recent_matches_a, recent_matches_b
-    
 # Function to process matches for a specific player
 async def process_player_matches(player, recent_matches: pd.DataFrame, game):
     game_date = game['tourney_date']
 
     recent_matches = recent_matches.sort_values(by='tourney_date', ascending=False)
 
-    recent_match_number = -1
-    recent_matches_played = 0
-    recent_elo_rating = START_RATING
-    recent_point_elo_rating = START_RATING
-    recent_game_elo_rating = START_RATING
-    recent_set_elo_rating = START_RATING
-    recent_service_game_elo_rating = START_RATING
-    recent_return_game_elo_rating = START_RATING
-    recent_tie_break_elo_rating = START_RATING
-    
-    print(game)
+    result = {
+        "recent_match_number": -1,
+        "recent_matches_played": 0,
+        "recent_elo_rating": START_RATING,
+        "recent_point_elo_rating": START_RATING,
+        "recent_game_elo_rating": START_RATING,
+        "recent_set_elo_rating": START_RATING,
+        "recent_service_game_elo_rating": START_RATING,
+        "recent_return_game_elo_rating": START_RATING,
+        "recent_tie_break_elo_rating": START_RATING
+    }
 
     for index, row in recent_matches.iterrows():
-        recent_match_number = row['match_num']
-        recent_matches_played += 1
+        result["recent_match_number"] = row['match_num']
+        result["recent_matches_played"] += 1
 
         if row["winner_name"] == player:
             w_games, l_games, w_sets, l_sets, tie_breaks_won_winner, tie_breaks_won_loser, tie_breaks_played = get_score_stats(row)
@@ -155,21 +145,21 @@ async def process_player_matches(player, recent_matches: pd.DataFrame, game):
             opponent_return_elo = row['oppo_return_elo_rating']
 
             # Primary update
-            recent_elo_rating, _ = primary_elo(recent_elo_rating, opponent_elo, row)
+            result["recent_elo_rating"], _ = primary_elo(result["recent_elo_rating"], opponent_elo, row)
             
             # Point Sets etc.
-            recent_point_elo_rating, _, recent_set_elo_rating, _, recent_game_elo_rating, _ = points_sets_games_elo(
-                recent_set_elo_rating, opponent_set_elo, recent_game_elo_rating, opponent_game_elo,
-                recent_point_elo_rating, opponent_point_elo, row, w_sets, l_sets, w_games, l_games
+            result["recent_point_elo_rating"], _, result["recent_set_elo_rating"], _, result["recent_game_elo_rating"], _ = points_sets_games_elo(
+                result["recent_set_elo_rating"], opponent_set_elo, result["recent_game_elo_rating"], opponent_game_elo,
+                result["recent_point_elo_rating"], opponent_point_elo, row, w_sets, l_sets, w_games, l_games
             )
 
             # TB Update
-            recent_tie_break_elo_rating, _ = tb_elo(recent_tie_break_elo_rating, opponent_tb_elo, row, tie_breaks_won_winner, tie_breaks_won_loser, tie_breaks_played)
+            result["recent_tie_break_elo_rating"], _ = tb_elo(result["recent_tie_break_elo_rating"], opponent_tb_elo, row, tie_breaks_won_winner, tie_breaks_won_loser, tie_breaks_played)
 
             # Serve/Return Update
             try:
-                recent_service_game_elo_rating, _, recent_return_game_elo_rating, _ = return_serve_elo(
-                    recent_service_game_elo_rating, opponent_service_elo, recent_return_game_elo_rating, opponent_return_elo, row
+                result["recent_service_game_elo_rating"], _, result["recent_return_game_elo_rating"], _ = return_serve_elo(
+                    result["recent_service_game_elo_rating"], opponent_service_elo, result["recent_return_game_elo_rating"], opponent_return_elo, row
                 )
             except Exception as e:
                 print(f"Skip worked {e}")
@@ -187,27 +177,28 @@ async def process_player_matches(player, recent_matches: pd.DataFrame, game):
             opponent_return_elo = row['oppo_return_elo_rating']
 
             # Primary update
-            _, recent_elo_rating = primary_elo(opponent_elo, recent_elo_rating, row)
+            _, result["recent_elo_rating"] = primary_elo(opponent_elo, result["recent_elo_rating"], row)
             
             # Point Sets etc.
-            _, recent_point_elo_rating, _, recent_set_elo_rating, _, recent_game_elo_rating = points_sets_games_elo(
-                opponent_set_elo, recent_set_elo_rating, opponent_game_elo, recent_game_elo_rating,
-                opponent_point_elo, recent_point_elo_rating, row, w_sets, l_sets, w_games, l_games
+            _, result["recent_point_elo_rating"], _, result["recent_set_elo_rating"], _, result["recent_game_elo_rating"] = points_sets_games_elo(
+                opponent_set_elo, result["recent_set_elo_rating"], opponent_game_elo, result["recent_game_elo_rating"],
+                opponent_point_elo, result["recent_point_elo_rating"], row, w_sets, l_sets, w_games, l_games
             )
 
             # TB Update
-            _, recent_tie_break_elo_rating = tb_elo(opponent_tb_elo, recent_tie_break_elo_rating, row, tie_breaks_won_winner, tie_breaks_won_loser, tie_breaks_played)
+            _, result["recent_tie_break_elo_rating"] = tb_elo(opponent_tb_elo, result["recent_tie_break_elo_rating"], row, tie_breaks_won_winner, tie_breaks_won_loser, tie_breaks_played)
 
             # Serve/Return Update
             try:
-                _, recent_service_game_elo_rating, _, recent_return_game_elo_rating = return_serve_elo(
-                    opponent_service_elo, recent_service_game_elo_rating, opponent_return_elo, recent_return_game_elo_rating, row
+                _, result["recent_service_game_elo_rating"], _, result["recent_return_game_elo_rating"] = return_serve_elo(
+                    opponent_service_elo, result["recent_service_game_elo_rating"], opponent_return_elo, result["recent_return_game_elo_rating"], row
                 )
             except Exception as e:
                 print(f"Skip worked {e}")
                 pass  # Missing stats ignore
-
-    return [recent_match_number, recent_matches_played, recent_elo_rating, recent_point_elo_rating, recent_game_elo_rating, recent_set_elo_rating, recent_service_game_elo_rating, recent_return_game_elo_rating, recent_tie_break_elo_rating]
+    
+    print(result)
+    return result
 
 def get_score_stats(row):
     sets = 0

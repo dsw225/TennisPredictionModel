@@ -7,7 +7,7 @@ import random
 import traceback
 import numpy as np
 from render.utils.elo_functions_copy import *
-import arff
+# import arff
 
 async def prior_games(df: pd.DataFrame, enddate: datetime.date):
     # Changing dataframe fix for future
