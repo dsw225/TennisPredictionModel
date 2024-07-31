@@ -1,4 +1,5 @@
 breakpoint/data/scrapers/proxy_addresses
+breakpoint/myenv
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
