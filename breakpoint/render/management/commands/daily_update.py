@@ -8,7 +8,7 @@ import signal
 import django
 from django.core.management.base import BaseCommand
 import unicodedata
-from render.models import TennisMatch
+from render.models import *
 import traceback
 
 base_url = "https://api.sofascore.com"
@@ -133,7 +133,7 @@ class Command(BaseCommand):
 
     async def get_most_recent_entry(self):
         try:
-            most_recent_entry = await TennisMatch.objects.order_by('-tourney_date').afirst()
+            most_recent_entry = await MensTennisMatch.objects.order_by('-tourney_date').afirst()
             if most_recent_entry:
                 print(most_recent_entry.tourney_date)
                 return most_recent_entry.tourney_date
@@ -444,7 +444,7 @@ class Command(BaseCommand):
                     mapped_data[field] = value
 
             try:
-                await TennisMatch.objects.acreate(**mapped_data)
+                await MensTennisMatch.objects.acreate(**mapped_data)
             except Exception as e:
                 print(f"Failed to add match {i + 1}/{len(df)} at date {mapped_data['tourney_date']} with exception {e}")
             print(f"{i} Matches added")
