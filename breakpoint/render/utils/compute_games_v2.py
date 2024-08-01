@@ -6,7 +6,7 @@ from math import pow, copysign, floor, ceil
 import random
 import traceback
 import numpy as np
-from breakpoint.render.utils.elo_functions_v2 import *
+from render.utils.elo_functions_v2 import *
 # import arff
 
 async def prior_games(df: pd.DataFrame, enddate: datetime.date):
@@ -201,7 +201,7 @@ async def prior_games(df: pd.DataFrame, enddate: datetime.date):
 
     pbar.close()
 
-    new_format.to_csv('testfree.csv', index=False)
+    new_format.to_csv('testfree3.csv', index=False)
 
     # np.savetxt("testfree.csv",
     #     tester,
@@ -239,25 +239,31 @@ async def create_new_game_df(game, players_elo, player_surface_elos):
     w_odds = game['winner_odds']
     l_odds = game['loser_odds']
 
-    player_a_stats, player_b_stats = await get_recent_stats(players_elo, game)
-    player_a_surface_stats, player_b_surface_stats = await get_recent_stats(player_surface_elos, game)
+    player_w_stats, player_l_stats = await get_recent_stats(players_elo, game)
+    player_w_surface_stats, player_l_surface_stats = await get_recent_stats(player_surface_elos, game)
 
     if random.choice([True, False]):
         player_a, player_b = w_player, l_player
         player_a_rank, player_b_rank = w_rank, l_rank
         player_a_odds, player_b_odds = w_odds, l_odds
+        player_a_stats, player_b_stats = player_w_stats, player_l_stats
+        player_a_surface_stats, player_b_surface_stats = player_w_surface_stats, player_l_surface_stats
         a_b_win = 1
     else:
         player_a, player_b = l_player, w_player
         player_a_rank, player_b_rank = l_rank, w_rank
         player_a_odds, player_b_odds = l_odds, w_odds
+        player_a_stats, player_b_stats = player_l_stats, player_w_stats
+        player_a_surface_stats, player_b_surface_stats = player_l_surface_stats, player_w_surface_stats
         a_b_win = 0
+
 
     a_player_elos = players_elo[players_elo['player'] == player_a]
     b_player_elos = players_elo[players_elo['player'] == player_b]
 
     a_surface_elos = player_surface_elos[player_surface_elos['player'] == player_a]
     b_surface_elos = player_surface_elos[player_surface_elos['player'] == player_b]
+
 
     # Construct the game entry
     game_entry = [
@@ -275,6 +281,7 @@ async def create_new_game_df(game, players_elo, player_surface_elos):
         player_b,
         '',
         player_b_rank,
+
         a_player_elos['elo_rating'],
         a_player_elos['point_elo_rating'],
         a_player_elos['game_elo_rating'],
