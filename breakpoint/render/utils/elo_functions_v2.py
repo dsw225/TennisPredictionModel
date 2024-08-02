@@ -15,7 +15,8 @@ K_FUNCTION_MULTIPLIER = 2.0 * (K_FUNCTION_AMPLIFIER - 1.0)
 
 DELTA_RATING_CAP = 200.0
 MIN_MATCHES = 5
-RECENT_WEEKS = 56
+RECENT_WEEKS = 130
+LATEST_WEEKS = 56
 RECENT_K_GAIN_FACTOR = 2
 
 # K_Factors in case adding league signifigance in future
@@ -119,7 +120,37 @@ async def parse_recent(recent_matches_a: pd.DataFrame, recent_matches_b: pd.Data
         'recent_set_elo_rating': 'oppo_recent_set_elo_rating',
         'recent_service_game_elo_rating': 'oppo_recent_service_game_elo_rating',
         'recent_return_game_elo_rating': 'oppo_recent_return_game_elo_rating',
-        'recent_tie_break_elo_rating': 'oppo_recent_tie_break_elo_rating'
+        'recent_tie_break_elo_rating': 'oppo_recent_tie_break_elo_rating',
+
+        'recent_surface_match_number': 'oppo_recent_surface_match_number',
+        'recent_surface_matches_played': 'oppo_recent_surface_matches_played',
+        'recent_surface_elo_rating': 'oppo_recent_surface_elo_rating',
+        'recent_surface_point_elo_rating': 'oppo_recent_surface_point_elo_rating',
+        'recent_surface_game_elo_rating': 'oppo_recent_surface_game_elo_rating',
+        'recent_surface_set_elo_rating': 'oppo_recent_surface_set_elo_rating',
+        'recent_surface_service_game_elo_rating': 'oppo_recent_surface_service_game_elo_rating',
+        'recent_surface_return_game_elo_rating': 'oppo_recent_surface_return_game_elo_rating',
+        'recent_surface_tie_break_elo_rating': 'oppo_recent_surface_tie_break_elo_rating',
+
+        'latest_match_number': 'oppo_latest_match_number',
+        'latest_matches_played': 'oppo_latest_matches_played',
+        'latest_elo_rating': 'oppo_latest_elo_rating',
+        'latest_point_elo_rating': 'oppo_latest_point_elo_rating',
+        'latest_game_elo_rating': 'oppo_latest_game_elo_rating',
+        'latest_set_elo_rating': 'oppo_latest_set_elo_rating',
+        'latest_service_game_elo_rating': 'oppo_latest_service_game_elo_rating',
+        'latest_return_game_elo_rating': 'oppo_latest_return_game_elo_rating',
+        'latest_tie_break_elo_rating': 'oppo_latest_tie_break_elo_rating',
+
+        'latest_surface_match_number': 'oppo_latest_surface_match_number',
+        'latest_surface_matches_played': 'oppo_latest_surface_matches_played',
+        'latest_surface_elo_rating': 'oppo_latest_surface_elo_rating',
+        'latest_surface_point_elo_rating': 'oppo_latest_surface_point_elo_rating',
+        'latest_surface_game_elo_rating': 'oppo_latest_surface_game_elo_rating',
+        'latest_surface_set_elo_rating': 'oppo_latest_surface_set_elo_rating',
+        'latest_surface_service_game_elo_rating': 'oppo_latest_surface_service_game_elo_rating',
+        'latest_surface_return_game_elo_rating': 'oppo_latest_surface_return_game_elo_rating',
+        'latest_surface_tie_break_elo_rating': 'oppo_latest_surface_tie_break_elo_rating'
     }
 
     oppo_player_a_stats = player_a_stats.rename(index=changed_headers)
@@ -144,92 +175,181 @@ async def parse_recent(recent_matches_a: pd.DataFrame, recent_matches_b: pd.Data
 
 # Function to process matches for a specific player
 async def process_player_matches(player, recent_matches: pd.DataFrame, game):
-    game_date = game['tourney_date']
+    def initialize_result():
+        return {
+            "recent_match_number": -1,
+            "recent_matches_played": 0,
+            "recent_elo_rating": START_RATING,
+            "recent_point_elo_rating": START_RATING,
+            "recent_game_elo_rating": START_RATING,
+            "recent_set_elo_rating": START_RATING,
+            "recent_service_game_elo_rating": START_RATING,
+            "recent_return_game_elo_rating": START_RATING,
+            "recent_tie_break_elo_rating": START_RATING,
 
-    recent_matches = recent_matches.sort_values(by='tourney_date', ascending=True)
+            "recent_surface_match_number": -1,
+            "recent_surface_matches_played": 0,
+            "recent_surface_elo_rating": START_RATING,
+            "recent_surface_point_elo_rating": START_RATING,
+            "recent_surface_game_elo_rating": START_RATING,
+            "recent_surface_set_elo_rating": START_RATING,
+            "recent_surface_service_game_elo_rating": START_RATING,
+            "recent_surface_return_game_elo_rating": START_RATING,
+            "recent_surface_tie_break_elo_rating": START_RATING,
 
-    result = {
-        "recent_match_number": -1,
-        "recent_matches_played": 0,
-        "recent_elo_rating": START_RATING,
-        "recent_point_elo_rating": START_RATING,
-        "recent_game_elo_rating": START_RATING,
-        "recent_set_elo_rating": START_RATING,
-        "recent_service_game_elo_rating": START_RATING,
-        "recent_return_game_elo_rating": START_RATING,
-        "recent_tie_break_elo_rating": START_RATING
-    }
+            "latest_match_number": -1,
+            "latest_matches_played": 0,
+            "latest_elo_rating": START_RATING,
+            "latest_point_elo_rating": START_RATING,
+            "latest_game_elo_rating": START_RATING,
+            "latest_set_elo_rating": START_RATING,
+            "latest_service_game_elo_rating": START_RATING,
+            "latest_return_game_elo_rating": START_RATING,
+            "latest_tie_break_elo_rating": START_RATING,
 
-    for index, row in recent_matches.iterrows():
-        result["recent_match_number"] = row['match_num']
-        result["recent_matches_played"] += 1
+            "latest_surface_match_number": -1,
+            "latest_surface_matches_played": 0,
+            "latest_surface_elo_rating": START_RATING,
+            "latest_surface_point_elo_rating": START_RATING,
+            "latest_surface_game_elo_rating": START_RATING,
+            "latest_surface_set_elo_rating": START_RATING,
+            "latest_surface_service_game_elo_rating": START_RATING,
+            "latest_surface_return_game_elo_rating": START_RATING,
+            "latest_surface_tie_break_elo_rating": START_RATING
+        }
 
-
+    def update_result_for_match(result, row, player, game_date, surface):
         if row["winner_name"] == player:
-            w_games, l_games, w_sets, l_sets, tie_breaks_won_winner, tie_breaks_won_loser, tie_breaks_played = get_score_stats(row)
+            # print(f"{row['tourney_date']} vs {game_date - timedelta(weeks=LATEST_WEEKS)}")
+            if row['tourney_date'] > game_date - timedelta(weeks=LATEST_WEEKS):
+                update_elo_ratings(result, row, surface, update_latest=True)
+                # print("ran")
+            update_elo_ratings(result, row, surface, update_latest=False)
+        else:
+            if row['tourney_date'] > game_date - timedelta(weeks=LATEST_WEEKS):
+                update_elo_ratings(result, row, surface, update_latest=True, is_winner=False)
+            update_elo_ratings(result, row, surface, update_latest=False, is_winner=False)
 
-            opponent_elo = row['oppo_recent_elo_rating'] if ~np.isnan(row['oppo_recent_elo_rating']) else 1500
-            # print(opponent_elo)
-            opponent_set_elo = row['oppo_recent_set_elo_rating'] if ~np.isnan(row['oppo_recent_set_elo_rating']) else 1500
-            opponent_game_elo = row['oppo_recent_game_elo_rating'] if ~np.isnan(row['oppo_recent_game_elo_rating']) else 1500
-            opponent_point_elo = row['oppo_recent_point_elo_rating'] if ~np.isnan(row['oppo_recent_point_elo_rating']) else 1500
-            opponent_tb_elo = row['oppo_recent_tb_elo_rating'] if ~np.isnan(row['oppo_recent_tb_elo_rating']) else 1500
-            opponent_service_elo = row['oppo_recent_service_elo_rating'] if ~np.isnan(row['oppo_recent_service_elo_rating']) else 1500
-            opponent_return_elo = row['oppo_recent_return_elo_rating'] if ~np.isnan(row['oppo_recent_return_elo_rating']) else 1500
+    def update_elo_ratings(result, row, surface, update_latest, is_winner=True):
+        w_games, l_games, w_sets, l_sets, tie_breaks_won_winner, tie_breaks_won_loser, tie_breaks_played = get_score_stats(row)
+        if not isinstance(row, pd.Series):
+            raise TypeError(f"Expected pandas Series but got {type(row)}")
+        prefix = "latest_" if update_latest else "recent_"
 
-            # Primary update
-            result["recent_elo_rating"], _ = primary_elo(result["recent_elo_rating"], opponent_elo, row)
-            
-            # Point Sets etc.
-            result["recent_point_elo_rating"], _, result["recent_set_elo_rating"], _, result["recent_game_elo_rating"], _ = points_sets_games_elo(
-                result["recent_set_elo_rating"], opponent_set_elo, result["recent_game_elo_rating"], opponent_game_elo,
-                result["recent_point_elo_rating"], opponent_point_elo, row, w_sets, l_sets, w_games, l_games
+        result[f"{prefix}match_number"] = row['match_num']
+        result[f"{prefix}matches_played"] += 1
+        
+        elo_keys = {
+            "elo_rating": f"{prefix}elo_rating",
+            "point_elo_rating": f"{prefix}point_elo_rating",
+            "game_elo_rating": f"{prefix}game_elo_rating",
+            "set_elo_rating": f"{prefix}set_elo_rating",
+            "service_game_elo_rating": f"{prefix}service_game_elo_rating",
+            "return_game_elo_rating": f"{prefix}return_game_elo_rating",
+            "tie_break_elo_rating": f"{prefix}tie_break_elo_rating",
+
+            "surface_elo_rating": f"{prefix}surface_elo_rating",
+            "surface_point_elo_rating": f"{prefix}surface_point_elo_rating",
+            "surface_game_elo_rating": f"{prefix}surface_game_elo_rating",
+            "surface_set_elo_rating": f"{prefix}surface_set_elo_rating",
+            "surface_service_game_elo_rating": f"{prefix}surface_service_game_elo_rating",
+            "surface_return_game_elo_rating": f"{prefix}surface_return_game_elo_rating",
+            "surface_tie_break_elo_rating": f"{prefix}surface_tie_break_elo_rating",
+        }
+
+        opponent_elo = {
+            "elo_rating": row[f'oppo_{prefix}elo_rating'] if ~np.isnan(row[f'oppo_{prefix}elo_rating']) else 1500,
+            "point_elo_rating": row[f'oppo_{prefix}point_elo_rating'] if ~np.isnan(row[f'oppo_{prefix}point_elo_rating']) else 1500,
+            "game_elo_rating": row[f'oppo_{prefix}game_elo_rating'] if ~np.isnan(row[f'oppo_{prefix}game_elo_rating']) else 1500,
+            "set_elo_rating": row[f'oppo_{prefix}set_elo_rating'] if ~np.isnan(row[f'oppo_{prefix}set_elo_rating']) else 1500,
+            "service_game_elo_rating": row[f'oppo_{prefix}service_elo_rating'] if ~np.isnan(row[f'oppo_{prefix}service_elo_rating']) else 1500,
+            "return_game_elo_rating": row[f'oppo_{prefix}return_elo_rating'] if ~np.isnan(row[f'oppo_{prefix}return_elo_rating']) else 1500,
+            "tie_break_elo_rating": row[f'oppo_{prefix}tb_elo_rating'] if ~np.isnan(row[f'oppo_{prefix}tb_elo_rating']) else 1500,
+
+            "surface_elo_rating": row[f'oppo_{prefix}surface_elo_rating'] if ~np.isnan(row[f'oppo_{prefix}surface_elo_rating']) else 1500,
+            "surface_point_elo_rating": row[f'oppo_{prefix}surface_point_elo_rating'] if ~np.isnan(row[f'oppo_{prefix}surface_point_elo_rating']) else 1500,
+            "surface_game_elo_rating": row[f'oppo_{prefix}surface_game_elo_rating'] if ~np.isnan(row[f'oppo_{prefix}surface_game_elo_rating']) else 1500,
+            "surface_set_elo_rating": row[f'oppo_{prefix}surface_set_elo_rating'] if ~np.isnan(row[f'oppo_{prefix}surface_set_elo_rating']) else 1500,
+            "surface_service_game_elo_rating": row[f'oppo_{prefix}surface_service_elo_rating'] if ~np.isnan(row[f'oppo_{prefix}surface_service_elo_rating']) else 1500,
+            "surface_return_game_elo_rating": row[f'oppo_{prefix}surface_return_elo_rating'] if ~np.isnan(row[f'oppo_{prefix}surface_return_elo_rating']) else 1500,
+            "surface_tie_break_elo_rating": row[f'oppo_{prefix}surface_tb_elo_rating'] if ~np.isnan(row[f'oppo_{prefix}surface_tb_elo_rating']) else 1500,
+        }
+        
+        if is_winner:
+            if surface == row["surface"]:
+                result[f"{prefix}surface_match_number"] = row['match_num']
+                result[f"{prefix}surface_matches_played"] += 1
+
+                result[elo_keys["surface_elo_rating"]], _ = primary_elo(result[elo_keys["elo_rating"]], opponent_elo["surface_elo_rating"], row)
+                result[elo_keys["surface_point_elo_rating"]], _, result[elo_keys["surface_set_elo_rating"]], _, result[elo_keys["surface_game_elo_rating"]], _ = points_sets_games_elo(
+                    result[elo_keys["surface_set_elo_rating"]], opponent_elo["surface_set_elo_rating"], result[elo_keys["surface_game_elo_rating"]], opponent_elo["surface_game_elo_rating"],
+                    result[elo_keys["surface_point_elo_rating"]], opponent_elo["surface_point_elo_rating"], row, w_sets, l_sets, w_games, l_games
+                )
+                result[elo_keys["surface_tie_break_elo_rating"]], _ = tb_elo(result[elo_keys["surface_tie_break_elo_rating"]], opponent_elo["surface_tie_break_elo_rating"], row, tie_breaks_won_winner, tie_breaks_won_loser, tie_breaks_played)
+                try:
+                    result[elo_keys["surface_service_game_elo_rating"]], _, result[elo_keys["surface_return_game_elo_rating"]], _ = return_serve_elo(
+                        result[elo_keys["surface_service_game_elo_rating"]], opponent_elo["surface_service_game_elo_rating"], result[elo_keys["surface_return_game_elo_rating"]], opponent_elo["surface_return_game_elo_rating"], row
+                    )
+                except Exception as e:
+                    print(f"Skip worked {e}")
+                    pass  # Missing stats ignore
+
+            result[elo_keys["elo_rating"]], _ = primary_elo(result[elo_keys["elo_rating"]], opponent_elo["elo_rating"], row)
+            result[elo_keys["point_elo_rating"]], _, result[elo_keys["set_elo_rating"]], _, result[elo_keys["game_elo_rating"]], _ = points_sets_games_elo(
+                result[elo_keys["set_elo_rating"]], opponent_elo["set_elo_rating"], result[elo_keys["game_elo_rating"]], opponent_elo["game_elo_rating"],
+                result[elo_keys["point_elo_rating"]], opponent_elo["point_elo_rating"], row, w_sets, l_sets, w_games, l_games
             )
-
-            # TB Update
-            result["recent_tie_break_elo_rating"], _ = tb_elo(result["recent_tie_break_elo_rating"], opponent_tb_elo, row, tie_breaks_won_winner, tie_breaks_won_loser, tie_breaks_played)
-
-            # Serve/Return Update
+            result[elo_keys["tie_break_elo_rating"]], _ = tb_elo(result[elo_keys["tie_break_elo_rating"]], opponent_elo["tie_break_elo_rating"], row, tie_breaks_won_winner, tie_breaks_won_loser, tie_breaks_played)
             try:
-                result["recent_service_game_elo_rating"], _, result["recent_return_game_elo_rating"], _ = return_serve_elo(
-                    result["recent_service_game_elo_rating"], opponent_service_elo, result["recent_return_game_elo_rating"], opponent_return_elo, row
+                result[elo_keys["service_game_elo_rating"]], _, result[elo_keys["return_game_elo_rating"]], _ = return_serve_elo(
+                    result[elo_keys["service_game_elo_rating"]], opponent_elo["service_game_elo_rating"], result[elo_keys["return_game_elo_rating"]], opponent_elo["return_game_elo_rating"], row
                 )
             except Exception as e:
                 print(f"Skip worked {e}")
                 pass  # Missing stats ignore
         else:
-            w_games, l_games, w_sets, l_sets, tie_breaks_won_winner, tie_breaks_won_loser, tie_breaks_played = get_score_stats(row)
+            if surface == row["surface"]:
+                result[f"{prefix}surface_match_number"] = row['match_num']
+                result[f"{prefix}surface_matches_played"] += 1
 
-            opponent_elo = row['oppo_recent_elo_rating'] if ~np.isnan(row['oppo_recent_elo_rating']) else 1500
-            opponent_set_elo = row['oppo_recent_set_elo_rating'] if ~np.isnan(row['oppo_recent_set_elo_rating']) else 1500
-            opponent_game_elo = row['oppo_recent_game_elo_rating'] if ~np.isnan(row['oppo_recent_game_elo_rating']) else 1500
-            opponent_point_elo = row['oppo_recent_point_elo_rating'] if ~np.isnan(row['oppo_recent_point_elo_rating']) else 1500
-            opponent_tb_elo = row['oppo_recent_tb_elo_rating'] if ~np.isnan(row['oppo_recent_tb_elo_rating']) else 1500
-            opponent_service_elo = row['oppo_recent_service_elo_rating'] if ~np.isnan(row['oppo_recent_service_elo_rating']) else 1500
-            opponent_return_elo = row['oppo_recent_return_elo_rating'] if ~np.isnan(row['oppo_recent_return_elo_rating']) else 1500
+                _, result[elo_keys["surface_elo_rating"]] = primary_elo(opponent_elo["surface_elo_rating"], result[elo_keys["surface_elo_rating"]], row)
+                _, result[elo_keys["surface_point_elo_rating"]], _, result[elo_keys["surface_set_elo_rating"]], _, result[elo_keys["surface_game_elo_rating"]] = points_sets_games_elo(
+                    opponent_elo["surface_set_elo_rating"], result[elo_keys["surface_set_elo_rating"]], opponent_elo["surface_game_elo_rating"], result[elo_keys["surface_game_elo_rating"]],
+                    opponent_elo["surface_point_elo_rating"], result[elo_keys["surface_point_elo_rating"]], row, w_sets, l_sets, w_games, l_games
+                )
+                _, result[elo_keys["surface_tie_break_elo_rating"]] = tb_elo(opponent_elo["surface_tie_break_elo_rating"], result[elo_keys["surface_tie_break_elo_rating"]], row, tie_breaks_won_winner, tie_breaks_won_loser, tie_breaks_played)
+                try:
+                    _, result[elo_keys["surface_service_game_elo_rating"]], _, result[elo_keys["surface_return_game_elo_rating"]] = return_serve_elo(
+                        opponent_elo["surface_service_game_elo_rating"], result[elo_keys["surface_service_game_elo_rating"]], opponent_elo["surface_return_game_elo_rating"], result[elo_keys["surface_return_game_elo_rating"]], row
+                    )
+                except Exception as e:
+                    print(f"Skip worked {e}")
+                    pass  # Missing stats ignore
 
-            # Primary update
-            _, result["recent_elo_rating"] = primary_elo(opponent_elo, result["recent_elo_rating"], row)
-            
-            # Point Sets etc.
-            _, result["recent_point_elo_rating"], _, result["recent_set_elo_rating"], _, result["recent_game_elo_rating"] = points_sets_games_elo(
-                opponent_set_elo, result["recent_set_elo_rating"], opponent_game_elo, result["recent_game_elo_rating"],
-                opponent_point_elo, result["recent_point_elo_rating"], row, w_sets, l_sets, w_games, l_games
+            _, result[elo_keys["elo_rating"]] = primary_elo(opponent_elo["elo_rating"], result[elo_keys["elo_rating"]], row)
+            _, result[elo_keys["point_elo_rating"]], _, result[elo_keys["set_elo_rating"]], _, result[elo_keys["game_elo_rating"]] = points_sets_games_elo(
+                opponent_elo["set_elo_rating"], result[elo_keys["set_elo_rating"]], opponent_elo["game_elo_rating"], result[elo_keys["game_elo_rating"]],
+                opponent_elo["point_elo_rating"], result[elo_keys["point_elo_rating"]], row, w_sets, l_sets, w_games, l_games
             )
-
-            # TB Update
-            _, result["recent_tie_break_elo_rating"] = tb_elo(opponent_tb_elo, result["recent_tie_break_elo_rating"], row, tie_breaks_won_winner, tie_breaks_won_loser, tie_breaks_played)
-
-            # Serve/Return Update
+            _, result[elo_keys["tie_break_elo_rating"]] = tb_elo(opponent_elo["tie_break_elo_rating"], result[elo_keys["tie_break_elo_rating"]], row, tie_breaks_won_winner, tie_breaks_won_loser, tie_breaks_played)
             try:
-                _, result["recent_service_game_elo_rating"], _, result["recent_return_game_elo_rating"] = return_serve_elo(
-                    opponent_service_elo, result["recent_service_game_elo_rating"], opponent_return_elo, result["recent_return_game_elo_rating"], row
+                _, result[elo_keys["service_game_elo_rating"]], _, result[elo_keys["return_game_elo_rating"]] = return_serve_elo(
+                    opponent_elo["service_game_elo_rating"], result[elo_keys["service_game_elo_rating"]], opponent_elo["return_game_elo_rating"], result[elo_keys["return_game_elo_rating"]], row
                 )
             except Exception as e:
                 print(f"Skip worked {e}")
                 pass  # Missing stats ignore
-    
-    # print(result)
+
+    # Main processing
+    game_date = game['tourney_date']
+    surface = game['surface']
+    recent_matches = recent_matches.sort_values(by='tourney_date', ascending=True)
+
+    result = initialize_result()
+
+    for index, row in recent_matches.iterrows():
+        update_result_for_match(result, row, player, game_date, surface)
+
     return pd.Series(result)
 
 def get_score_stats(row):

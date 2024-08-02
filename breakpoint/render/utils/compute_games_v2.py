@@ -32,8 +32,7 @@ async def prior_games(df: pd.DataFrame, enddate: datetime.date):
     combined_names = pd.concat([matches_df['winner_name'], matches_df['loser_name']])
     players_to_elo = combined_names.drop_duplicates().tolist()
 
-    new_header = ['player', 'last_date', 'match_number', 'matches_played', 'elo_rating', 'point_elo_rating', 'game_elo_rating', 
-                  'set_elo_rating', 'service_game_elo_rating', 'return_game_elo_rating', 'tie_break_elo_rating', 'recent_matches']
+    new_header = ['player', 'recent_matches']
 
     matches_headers = matches_df.columns.tolist()
 
@@ -47,7 +46,37 @@ async def prior_games(df: pd.DataFrame, enddate: datetime.date):
         'oppo_recent_point_elo_rating',
         'oppo_recent_tb_elo_rating',
         'oppo_recent_service_elo_rating',
-        'oppo_recent_return_elo_rating'
+        'oppo_recent_return_elo_rating',
+
+        "oppo_recent_surface_match_number",
+        "oppo_recent_surface_matches_played",
+        'oppo_recent_surface_elo_rating',
+        'oppo_recent_surface_set_elo_rating',
+        'oppo_recent_surface_game_elo_rating',
+        'oppo_recent_surface_point_elo_rating',
+        'oppo_recent_surface_tb_elo_rating',
+        'oppo_recent_surface_service_elo_rating',
+        'oppo_recent_surface_return_elo_rating',
+
+        "oppo_latest_match_number",
+        "oppo_latest_matches_played",
+        'oppo_latest_elo_rating',
+        'oppo_latest_set_elo_rating',
+        'oppo_latest_game_elo_rating',
+        'oppo_latest_point_elo_rating',
+        'oppo_latest_tb_elo_rating',
+        'oppo_latest_service_elo_rating',
+        'oppo_latest_return_elo_rating',
+
+        "oppo_latest_surface_match_number",
+        "oppo_latest_surface_matches_played",
+        'oppo_latest_surface_elo_rating',
+        'oppo_latest_surface_set_elo_rating',
+        'oppo_latest_surface_game_elo_rating',
+        'oppo_latest_surface_point_elo_rating',
+        'oppo_latest_surface_tb_elo_rating',
+        'oppo_latest_surface_service_elo_rating',
+        'oppo_latest_surface_return_elo_rating',
     ]
 
     # Combine matches headers and additional headers
@@ -58,26 +87,10 @@ async def prior_games(df: pd.DataFrame, enddate: datetime.date):
 
     data = {
         'player': players_to_elo,   
-        'last_date': [datetime(1900, 1, 1)] * len(players_to_elo),
-        'match_number': [0] * len(players_to_elo),
-        'matches_played': [0] * len(players_to_elo),
-        'elo_rating': [START_RATING] * len(players_to_elo),
-        'point_elo_rating': [START_RATING] * len(players_to_elo),
-        'game_elo_rating': [START_RATING] * len(players_to_elo),
-        'set_elo_rating': [START_RATING] * len(players_to_elo),
-        'service_game_elo_rating': [START_RATING] * len(players_to_elo),
-        'return_game_elo_rating': [START_RATING] * len(players_to_elo),
-        'tie_break_elo_rating': [START_RATING] * len(players_to_elo),
-
         'recent_matches': [create_recent_matches_df() for _ in players_to_elo]
     }
 
     players_elo = pd.DataFrame(data, columns=new_header)
-    clay_players_elo = pd.DataFrame(data, columns=new_header)
-    grass_players_elo = pd.DataFrame(data, columns=new_header)
-    hard_players_elo = pd.DataFrame(data, columns=new_header)
-
-    # print(players_elo.loc[0, 'recent_matches'].columns.tolist())
 
     game_header = [
         'tourney_id',
@@ -95,37 +108,6 @@ async def prior_games(df: pd.DataFrame, enddate: datetime.date):
         'b_player_slug',
         'b_player_rank',
 
-        'a_elo_rating',
-        'a_point_elo_rating',
-        'a_game_elo_rating',
-        'a_set_elo_rating',
-        'a_service_game_elo_rating',
-        'a_return_game_elo_rating',
-        'a_tie_break_elo_rating',
-        'a_surface_elo_rating',
-        'a_surface_point_elo_rating',
-        'a_surface_game_elo_rating',
-        'a_surface_set_elo_rating',
-        'a_surface_service_game_elo_rating',
-        'a_surface_return_game_elo_rating',
-        'a_surface_tie_break_elo_rating',
-
-        'b_elo_rating',
-        'b_point_elo_rating',
-        'b_game_elo_rating',
-        'b_set_elo_rating',
-        'b_service_game_elo_rating',
-        'b_return_game_elo_rating',
-        'b_tie_break_elo_rating',
-        'b_surface_elo_rating',
-        'b_surface_point_elo_rating',
-        'b_surface_game_elo_rating',
-        'b_surface_set_elo_rating',
-        'b_surface_service_game_elo_rating',
-        'b_surface_return_game_elo_rating',
-        'b_surface_tie_break_elo_rating',
-
-
         'a_recent_elo_rating',
         'a_recent_point_elo_rating',
         'a_recent_game_elo_rating',
@@ -133,13 +115,13 @@ async def prior_games(df: pd.DataFrame, enddate: datetime.date):
         'a_recent_service_game_elo_rating',
         'a_recent_return_game_elo_rating',
         'a_recent_tie_break_elo_rating',
-        'a_surface_recent_elo_rating',
-        'a_surface_recent_point_elo_rating',
-        'a_surface_recent_game_elo_rating',
-        'a_surface_recent_set_elo_rating',
-        'a_surface_recent_service_game_elo_rating',
-        'a_surface_recent_return_game_elo_rating',
-        'a_surface_recent_tie_break_elo_rating',
+        'a_recent_surface_elo_rating',
+        'a_recent_surface_point_elo_rating',
+        'a_recent_surface_game_elo_rating',
+        'a_recent_surface_set_elo_rating',
+        'a_recent_surface_service_game_elo_rating',
+        'a_recent_surface_return_game_elo_rating',
+        'a_recent_surface_tie_break_elo_rating',
 
         'b_recent_elo_rating',
         'b_recent_point_elo_rating',
@@ -148,14 +130,43 @@ async def prior_games(df: pd.DataFrame, enddate: datetime.date):
         'b_recent_service_game_elo_rating',
         'b_recent_return_game_elo_rating',
         'b_recent_tie_break_elo_rating',
-        'b_surface_recent_elo_rating',
-        'b_surface_recent_point_elo_rating',
-        'b_surface_recent_game_elo_rating',
-        'b_surface_recent_set_elo_rating',
-        'b_surface_recent_service_game_elo_rating',
-        'b_surface_recent_return_game_elo_rating',
-        'b_surface_recent_tie_break_elo_rating',
+        'b_recent_surface_elo_rating',
+        'b_recent_surface_point_elo_rating',
+        'b_recent_surface_game_elo_rating',
+        'b_recent_surface_set_elo_rating',
+        'b_recent_surface_service_game_elo_rating',
+        'b_recent_surface_return_game_elo_rating',
+        'b_recent_surface_tie_break_elo_rating',
 
+        'a_latest_elo_rating',
+        'a_latest_point_elo_rating',
+        'a_latest_game_elo_rating',
+        'a_latest_set_elo_rating',
+        'a_latest_service_game_elo_rating',
+        'a_latest_return_game_elo_rating',
+        'a_latest_tie_break_elo_rating',
+        'a_latest_surface_elo_rating',
+        'a_latest_surface_point_elo_rating',
+        'a_latest_surface_game_elo_rating',
+        'a_latest_surface_set_elo_rating',
+        'a_latest_surface_service_game_elo_rating',
+        'a_latest_surface_return_game_elo_rating',
+        'a_latest_surface_tie_break_elo_rating',
+
+        'b_latest_elo_rating',
+        'b_latest_point_elo_rating',
+        'b_latest_game_elo_rating',
+        'b_latest_set_elo_rating',
+        'b_latest_service_game_elo_rating',
+        'b_latest_return_game_elo_rating',
+        'b_latest_tie_break_elo_rating',
+        'b_latest_surface_elo_rating',
+        'b_latest_surface_point_elo_rating',
+        'b_latest_surface_game_elo_rating',
+        'b_latest_surface_set_elo_rating',
+        'b_latest_surface_service_game_elo_rating',
+        'b_latest_surface_return_game_elo_rating',
+        'b_latest_surface_tie_break_elo_rating',
 
         'a_b_win',
         'a_odds',
@@ -166,31 +177,18 @@ async def prior_games(df: pd.DataFrame, enddate: datetime.date):
 
     tasks = []
     # For surfaces + total elo
-    pbar = tqdm(total=len(matches_df)*2, desc="Processing Elos")
+    pbar = tqdm(total=len(matches_df), desc="Processing Elos")
 
-    async def update_elos_with_progress(players_elo, row):
-        await update_elos(players_elo, row)
+
+    async def update_games(new_format: pd.DataFrame, index, row, players_elo):
+        new_format.iloc[index] = pd.Series(await create_new_game_df(row, players_elo))
         pbar.update(1)
 
-    async def update_games(new_format: pd.DataFrame, index, row, players_elo, surface_players_elo):
-        new_format.iloc[index] = pd.Series(await create_new_game_df(row, players_elo, surface_players_elo))
 
     for index, row in matches_df.iterrows():
-        if row['surface'] == "Grass":
-            tasks.append(update_games(new_format, index, row, players_elo, grass_players_elo))
-            tasks.append(update_elos_with_progress(grass_players_elo, row))
-        elif row['surface'] == "Clay":
-            tasks.append(update_games(new_format, index, row, players_elo, clay_players_elo))
-            tasks.append(update_elos_with_progress(clay_players_elo, row))
-        elif row['surface'] == "Hard":
-            tasks.append(update_games(new_format, index, row, players_elo, hard_players_elo))
-            tasks.append(update_elos_with_progress(hard_players_elo, row))
-        else:
-            pbar.update(1)
+        tasks.append(update_games(new_format, index, row, players_elo))
+        # print(index)
 
-        tasks.append(update_elos_with_progress(players_elo, row))
-
-        # To avoid accumulating too many tasks, you can process them in smaller batches
         if len(tasks) >= 1000:
             await asyncio.gather(*tasks)
             tasks = []  # Reset the tasks list
@@ -201,12 +199,7 @@ async def prior_games(df: pd.DataFrame, enddate: datetime.date):
 
     pbar.close()
 
-    new_format.to_csv('testfree3.csv', index=False)
-
-    # np.savetxt("testfree.csv",
-    #     tester,
-    #     delimiter =", ",
-    #     fmt ='% s')
+    new_format.to_csv('testfree8.csv', index=False)
 
     return new_format
 
@@ -231,7 +224,7 @@ async def get_recent_stats(players_elo, row):
 
     return player_a_stats, player_b_stats
 
-async def create_new_game_df(game, players_elo, player_surface_elos):
+async def create_new_game_df(game, players_elo):
     w_player = game['winner_name'] #Change to ID later
     l_player = game['loser_name'] #Change to ID later
     w_rank = game['winner_rank']
@@ -240,30 +233,19 @@ async def create_new_game_df(game, players_elo, player_surface_elos):
     l_odds = game['loser_odds']
 
     player_w_stats, player_l_stats = await get_recent_stats(players_elo, game)
-    player_w_surface_stats, player_l_surface_stats = await get_recent_stats(player_surface_elos, game)
 
     if random.choice([True, False]):
         player_a, player_b = w_player, l_player
         player_a_rank, player_b_rank = w_rank, l_rank
         player_a_odds, player_b_odds = w_odds, l_odds
         player_a_stats, player_b_stats = player_w_stats, player_l_stats
-        player_a_surface_stats, player_b_surface_stats = player_w_surface_stats, player_l_surface_stats
         a_b_win = 1
     else:
         player_a, player_b = l_player, w_player
         player_a_rank, player_b_rank = l_rank, w_rank
         player_a_odds, player_b_odds = l_odds, w_odds
         player_a_stats, player_b_stats = player_l_stats, player_w_stats
-        player_a_surface_stats, player_b_surface_stats = player_l_surface_stats, player_w_surface_stats
         a_b_win = 0
-
-
-    a_player_elos = players_elo[players_elo['player'] == player_a]
-    b_player_elos = players_elo[players_elo['player'] == player_b]
-
-    a_surface_elos = player_surface_elos[player_surface_elos['player'] == player_a]
-    b_surface_elos = player_surface_elos[player_surface_elos['player'] == player_b]
-
 
     # Construct the game entry
     game_entry = [
@@ -282,37 +264,6 @@ async def create_new_game_df(game, players_elo, player_surface_elos):
         '',
         player_b_rank,
 
-        a_player_elos['elo_rating'],
-        a_player_elos['point_elo_rating'],
-        a_player_elos['game_elo_rating'],
-        a_player_elos['set_elo_rating'],
-        a_player_elos['service_game_elo_rating'],
-        a_player_elos['return_game_elo_rating'],
-        a_player_elos['tie_break_elo_rating'],
-        a_surface_elos['elo_rating'],
-        a_surface_elos['point_elo_rating'],
-        a_surface_elos['game_elo_rating'],
-        a_surface_elos['set_elo_rating'],
-        a_surface_elos['service_game_elo_rating'],
-        a_surface_elos['return_game_elo_rating'],
-        a_surface_elos['tie_break_elo_rating'],
-
-        b_player_elos['elo_rating'],
-        b_player_elos['point_elo_rating'],
-        b_player_elos['game_elo_rating'],
-        b_player_elos['set_elo_rating'],
-        b_player_elos['service_game_elo_rating'],
-        b_player_elos['return_game_elo_rating'],
-        b_player_elos['tie_break_elo_rating'],
-        b_surface_elos['elo_rating'],
-        b_surface_elos['point_elo_rating'],
-        b_surface_elos['game_elo_rating'],
-        b_surface_elos['set_elo_rating'],
-        b_surface_elos['service_game_elo_rating'],
-        b_surface_elos['return_game_elo_rating'],
-        b_surface_elos['tie_break_elo_rating'],
-
-
         player_a_stats['recent_elo_rating'],
         player_a_stats['recent_point_elo_rating'],
         player_a_stats['recent_game_elo_rating'],
@@ -320,13 +271,13 @@ async def create_new_game_df(game, players_elo, player_surface_elos):
         player_a_stats['recent_service_game_elo_rating'],
         player_a_stats['recent_return_game_elo_rating'],
         player_a_stats['recent_tie_break_elo_rating'],
-        player_a_surface_stats['recent_elo_rating'],
-        player_a_surface_stats['recent_point_elo_rating'],
-        player_a_surface_stats['recent_game_elo_rating'],
-        player_a_surface_stats['recent_set_elo_rating'],
-        player_a_surface_stats['recent_service_game_elo_rating'],
-        player_a_surface_stats['recent_return_game_elo_rating'],
-        player_a_surface_stats['recent_tie_break_elo_rating'],
+        player_a_stats['recent_surface_elo_rating'],
+        player_a_stats['recent_surface_point_elo_rating'],
+        player_a_stats['recent_surface_game_elo_rating'],
+        player_a_stats['recent_surface_set_elo_rating'],
+        player_a_stats['recent_surface_service_game_elo_rating'],
+        player_a_stats['recent_surface_return_game_elo_rating'],
+        player_a_stats['recent_surface_tie_break_elo_rating'],
 
         player_b_stats['recent_elo_rating'],
         player_b_stats['recent_point_elo_rating'],
@@ -335,13 +286,43 @@ async def create_new_game_df(game, players_elo, player_surface_elos):
         player_b_stats['recent_service_game_elo_rating'],
         player_b_stats['recent_return_game_elo_rating'],
         player_b_stats['recent_tie_break_elo_rating'],
-        player_b_surface_stats['recent_elo_rating'],
-        player_b_surface_stats['recent_point_elo_rating'],
-        player_b_surface_stats['recent_game_elo_rating'],
-        player_b_surface_stats['recent_set_elo_rating'],
-        player_b_surface_stats['recent_service_game_elo_rating'],
-        player_b_surface_stats['recent_return_game_elo_rating'],
-        player_b_surface_stats['recent_tie_break_elo_rating'],
+        player_b_stats['recent_surface_elo_rating'],
+        player_b_stats['recent_surface_point_elo_rating'],
+        player_b_stats['recent_surface_game_elo_rating'],
+        player_b_stats['recent_surface_set_elo_rating'],
+        player_b_stats['recent_surface_service_game_elo_rating'],
+        player_b_stats['recent_surface_return_game_elo_rating'],
+        player_b_stats['recent_surface_tie_break_elo_rating'],
+
+        player_a_stats['latest_elo_rating'],
+        player_a_stats['latest_point_elo_rating'],
+        player_a_stats['latest_game_elo_rating'],
+        player_a_stats['latest_set_elo_rating'],
+        player_a_stats['latest_service_game_elo_rating'],
+        player_a_stats['latest_return_game_elo_rating'],
+        player_a_stats['latest_tie_break_elo_rating'],
+        player_a_stats['latest_surface_elo_rating'],
+        player_a_stats['latest_surface_point_elo_rating'],
+        player_a_stats['latest_surface_game_elo_rating'],
+        player_a_stats['latest_surface_set_elo_rating'],
+        player_a_stats['latest_surface_service_game_elo_rating'],
+        player_a_stats['latest_surface_return_game_elo_rating'],
+        player_a_stats['latest_surface_tie_break_elo_rating'],
+
+        player_b_stats['latest_elo_rating'],
+        player_b_stats['latest_point_elo_rating'],
+        player_b_stats['latest_game_elo_rating'],
+        player_b_stats['latest_set_elo_rating'],
+        player_b_stats['latest_service_game_elo_rating'],
+        player_b_stats['latest_return_game_elo_rating'],
+        player_b_stats['latest_tie_break_elo_rating'],
+        player_b_stats['latest_surface_elo_rating'],
+        player_b_stats['latest_surface_point_elo_rating'],
+        player_b_stats['latest_surface_game_elo_rating'],
+        player_b_stats['latest_surface_set_elo_rating'],
+        player_b_stats['latest_surface_service_game_elo_rating'],
+        player_b_stats['latest_surface_return_game_elo_rating'],
+        player_b_stats['latest_surface_tie_break_elo_rating'],
 
         a_b_win,
         player_a_odds,
