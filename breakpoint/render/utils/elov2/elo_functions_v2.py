@@ -4,7 +4,7 @@ from dateutil.relativedelta import relativedelta
 import pandas as pd
 import numpy as np
 
-START_RATING = 1500
+START_RATING = 1400
 RATING_SCALE = 480.0
 K_FACTOR = 32.0
 K_FUNCTION_AMPLIFIER = 10.0

@@ -219,7 +219,7 @@ async def prior_games(df: pd.DataFrame, enddate: datetime.date):
 
     pbar.close()
 
-    new_format.to_csv('testoverunder1.csv', index=False)
+    new_format.to_csv('testfree48.csv', index=False)
 
     return new_format
 
@@ -252,13 +252,13 @@ async def create_new_game_df(game, players_elo):
     w_odds = game['winner_odds']
     l_odds = game['loser_odds']
 
-    _, _, w_sets, l_sets, _, _, _ = get_score_stats(game)
-    total_sets = w_sets+l_sets
-    a_b_win = -23
-    if total_sets > 2 and game['best_of'] == 3:
-        a_b_win = 1
-    elif game['best_of'] == 3:
-        a_b_win = 0
+    # _, _, w_sets, l_sets, _, _, _ = get_score_stats(game)
+    # total_sets = w_sets+l_sets
+    # a_b_win = -23
+    # if total_sets > 2 and game['best_of'] == 3:
+    #     a_b_win = 1
+    # elif game['best_of'] == 3:
+    #     a_b_win = 0
 
 
 
@@ -269,13 +269,13 @@ async def create_new_game_df(game, players_elo):
         player_a_rank, player_b_rank = w_rank, l_rank
         player_a_odds, player_b_odds = w_odds, l_odds
         player_a_stats, player_b_stats = player_w_stats, player_l_stats
-        # a_b_win = 1
+        a_b_win = 1
     else:
         player_a, player_b = l_player, w_player
         player_a_rank, player_b_rank = l_rank, w_rank
         player_a_odds, player_b_odds = l_odds, w_odds
         player_a_stats, player_b_stats = player_l_stats, player_w_stats
-        # a_b_win = 0
+        a_b_win = 0
 
     # Construct the game entry
     game_entry = [

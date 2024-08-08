@@ -64,7 +64,7 @@ async def update_elos(players_elo : pd.DataFrame, row):
             rAserviceNew, rBserviceNew, rAreturnNew, rBreturnNew = return_serve_elo(rAservice, rBservice, rAreturn, rBreturn, row)
             update_return_serve_elo(players_elo, idxA, idxB, rAserviceNew, rBserviceNew, rAreturnNew, rBreturnNew)
         except Exception as b:
-            print(f"Skip worked {b}")
+            # print(f"Skip worked {b}")
             pass #Missing stats ignore
     except Exception as e:
         print(f"An error occurred: {e}")
@@ -355,7 +355,7 @@ async def process_player_matches(player, recent_matches: pd.DataFrame, game):
                         result[elo_keys["surface_second_won_elo_rating"]], opponent_elo["surface_second_won_elo_rating"], result[elo_keys["surface_return_second_won_elo_rating"]], opponent_elo["surface_return_second_won_elo_rating"], row
                     )
                 except Exception as e:
-                    print(f"Skip worked {e}")
+                    # print(f"Skip worked {e}")
                     pass  # Missing stats ignore
 
             result[elo_keys["elo_rating"]], _ = primary_elo(result[elo_keys["elo_rating"]], opponent_elo["elo_rating"], row)
@@ -381,7 +381,7 @@ async def process_player_matches(player, recent_matches: pd.DataFrame, game):
                     result[elo_keys["second_won_elo_rating"]], opponent_elo["second_won_elo_rating"], result[elo_keys["return_second_won_elo_rating"]], opponent_elo["return_second_won_elo_rating"], row
                 )
             except Exception as e:
-                print(f"Skip worked {e}")
+                # print(f"Skip worked {e}")
                 pass  # Missing stats ignore
         else:
             if surface == row["surface"]:
@@ -411,7 +411,7 @@ async def process_player_matches(player, recent_matches: pd.DataFrame, game):
                         opponent_elo["surface_second_won_elo_rating"], result[elo_keys["surface_second_won_elo_rating"]], opponent_elo["surface_return_second_won_elo_rating"], result[elo_keys["surface_return_second_won_elo_rating"]], row
                     )
                 except Exception as e:
-                    print(f"Skip worked {e}")
+                    # print(f"Skip worked {e}")
                     pass  # Missing stats ignore
 
             _, result[elo_keys["elo_rating"]] = primary_elo(opponent_elo["elo_rating"], result[elo_keys["elo_rating"]], row)
@@ -437,7 +437,7 @@ async def process_player_matches(player, recent_matches: pd.DataFrame, game):
                     opponent_elo["second_won_elo_rating"], result[elo_keys["second_won_elo_rating"]], opponent_elo["return_second_won_elo_rating"], result[elo_keys["return_second_won_elo_rating"]], row
                 )
             except Exception as e:
-                print(f"Skip worked {e}")
+                # print(f"Skip worked {e}")
                 pass  # Missing stats ignore
 
     # Main processing
