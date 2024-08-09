@@ -71,7 +71,7 @@ class Rating:
         # Update last match date
         self.last_match_date = current_date
 
-    def _new_vol(self, rating_list, rd_list, outcome_list, v):
+    def _newVol(self, rating_list, rd_list, outcome_list, v):
         a = log(self.vol ** 2)
         eps = 0.000001
         A = a

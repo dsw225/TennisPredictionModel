@@ -37,8 +37,6 @@ async def prior_games(df: pd.DataFrame, enddate: datetime.date):
 
     data = {
         'player': players_to_glicko,   
-        'last_date': [datetime(1900, 1, 1)] * len(players_to_glicko),
-        'match_number': [0] * len(players_to_glicko),
         'matches_played': [0] * len(players_to_glicko),
         'glicko_rating': Rating() * len(players_to_glicko),
         'point_glicko_rating': Rating() * len(players_to_glicko),
@@ -47,13 +45,18 @@ async def prior_games(df: pd.DataFrame, enddate: datetime.date):
         'service_game_glicko_rating': Rating() * len(players_to_glicko),
         'return_game_glicko_rating': Rating() * len(players_to_glicko),
         'tie_break_glicko_rating': Rating() * len(players_to_glicko),
+        "ace_glicko_rating": Rating() * len(players_to_glicko),
+        "return_ace_glicko_rating": Rating() * len(players_to_glicko),
+        "first_won_glicko_rating": Rating() * len(players_to_glicko),
+        "return_first_won_glicko_rating": Rating() * len(players_to_glicko),
+        "second_won_glicko_rating": Rating() * len(players_to_glicko),
+        "return_second_won_glicko_rating": Rating() * len(players_to_glicko),
     }
 
     players_glicko = pd.DataFrame(data, columns=new_header)
     clay_players_glicko = pd.DataFrame(data, columns=new_header)
     grass_players_glicko = pd.DataFrame(data, columns=new_header)
     hard_players_glicko = pd.DataFrame(data, columns=new_header)
-
 
     game_header = [
         'tourney_id',
