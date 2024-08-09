@@ -3,7 +3,6 @@ import numpy as np
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 from render.utils.glicko2.glicko2_functions import *
-from render.utils.glicko2.glicko2 import *
 import warnings
 import traceback
 
