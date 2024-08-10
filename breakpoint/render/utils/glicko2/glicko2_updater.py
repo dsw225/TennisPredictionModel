@@ -50,7 +50,7 @@ async def update_glickos(players_glicko : pd.DataFrame, row):
         update_points_sets_games_glicko(players_glicko, idxA, idxB, rApointNew, rBpointNew, rAsetNew, rBsetNew, rAgameNew, rBgameNew)
 
         # TB Update
-        rAtbNew, rBtbNew = tb_glicko(players_glicko.at[idxA, 'tie_break_glicko_rating'], players_glicko.at[idxB, 'tie_break_glicko_rating'], row, tie_breaks_won_winner, tie_breaks_won_loser, tie_breaks_played)
+        rAtbNew, rBtbNew = tb_glicko(players_glicko.at[idxA, 'tie_break_glicko_rating'], players_glicko.at[idxB, 'tie_break_glicko_rating'], tie_breaks_won_winner, tie_breaks_played, row['tourney_date'])
         update_tb_glicko(players_glicko, idxA, idxB, rAtbNew, rBtbNew)
 
         # Serve/Return Update
@@ -63,8 +63,35 @@ async def update_glickos(players_glicko : pd.DataFrame, row):
 
             rAserviceNew, rBserviceNew, rAreturnNew, rBreturnNew = return_serve_glicko(rAservice, rBservice, rAreturn, rBreturn, row)
             update_return_serve_glicko(players_glicko, idxA, idxB, rAserviceNew, rBserviceNew, rAreturnNew, rBreturnNew)
+
+            rAace = players_glicko.at[idxA, 'ace_glicko_rating']
+            rBace = players_glicko.at[idxB, 'ace_glicko_rating']
+
+            rAaceReturn = players_glicko.at[idxA, 'return_ace_glicko_rating']
+            rBaceReturn = players_glicko.at[idxB, 'return_ace_glicko_rating']
+
+            rAaceNew, rBaceNew, rAaceReturnNew, rBaceReturnNew = ace_glicko(rAace, rBace, rAaceReturn, rBaceReturn, row)
+            update_ace_glicko(players_glicko, idxA, idxB, rAaceNew, rBaceNew, rAaceReturnNew, rBaceReturnNew)
+
+            rAfw = players_glicko.at[idxA, 'first_won_glicko_rating']
+            rBfw = players_glicko.at[idxB, 'first_won_glicko_rating']
+
+            rAvFw = players_glicko.at[idxA, 'return_first_won_glicko_rating']
+            rBvFw = players_glicko.at[idxB, 'return_first_won_glicko_rating']
+
+            rAfwNew, rBfwNew, rAvFwNew, rBvFwNew = first_won_glicko(rAfw, rBfw, rAvFw, rBvFw, row)
+            update_first_won_glicko(players_glicko, idxA, idxB, rAfwNew, rBfwNew, rAvFwNew, rBvFwNew)
+
+            rAsw = players_glicko.at[idxA, 'second_won_glicko_rating']
+            rBsw = players_glicko.at[idxB, 'second_won_glicko_rating']
+
+            rAvSw = players_glicko.at[idxA, 'second_won_glicko_rating']
+            rBvSw = players_glicko.at[idxB, 'second_won_glicko_rating']
+
+            rAswNew, rBswNew, rAvSwNew, rBvSwNew = second_won_glicko(rAsw, rBsw, rAvSw, rBvSw, row)
+            update_second_won_glicko(players_glicko, idxA, idxB, rAswNew, rBswNew, rAvSwNew, rBvSwNew)
         except Exception as b:
-            print(f"Skip worked {b}")
+            # print(f"Skip worked {b}")
             pass #Missing stats ignore
     except Exception as e:
         print(f"An error occurred: {e}")
@@ -285,7 +312,7 @@ async def process_player_matches(player, recent_matches: pd.DataFrame, game):
                         result[glicko_keys["surface_second_won_glicko_rating"]], opponent_glicko["surface_second_won_glicko_rating"], result[glicko_keys["surface_return_second_won_glicko_rating"]], opponent_glicko["surface_return_second_won_glicko_rating"], row
                     )
                 except Exception as e:
-                    print(f"Skip worked {e}")
+                    # print(f"Skip worked {e}")
                     pass  # Missing stats ignore
 
             result[glicko_keys["glicko_rating"]], _ = primary_glicko(result[glicko_keys["glicko_rating"]], opponent_glicko["glicko_rating"], row)
@@ -311,7 +338,7 @@ async def process_player_matches(player, recent_matches: pd.DataFrame, game):
                     result[glicko_keys["second_won_glicko_rating"]], opponent_glicko["second_won_glicko_rating"], result[glicko_keys["return_second_won_glicko_rating"]], opponent_glicko["return_second_won_glicko_rating"], row
                 )
             except Exception as e:
-                print(f"Skip worked {e}")
+                # print(f"Skip worked {e}")
                 pass  # Missing stats ignore
         else:
             if surface == row["surface"]:
@@ -341,7 +368,7 @@ async def process_player_matches(player, recent_matches: pd.DataFrame, game):
                         opponent_glicko["surface_second_won_glicko_rating"], result[glicko_keys["surface_second_won_glicko_rating"]], opponent_glicko["surface_return_second_won_glicko_rating"], result[glicko_keys["surface_return_second_won_glicko_rating"]], row
                     )
                 except Exception as e:
-                    print(f"Skip worked {e}")
+                    # print(f"Skip worked {e}")
                     pass  # Missing stats ignore
 
             _, result[glicko_keys["glicko_rating"]] = primary_glicko(opponent_glicko["glicko_rating"], result[glicko_keys["glicko_rating"]], row)
@@ -367,7 +394,7 @@ async def process_player_matches(player, recent_matches: pd.DataFrame, game):
                     opponent_glicko["second_won_glicko_rating"], result[glicko_keys["second_won_glicko_rating"]], opponent_glicko["return_second_won_glicko_rating"], result[glicko_keys["return_second_won_glicko_rating"]], row
                 )
             except Exception as e:
-                print(f"Skip worked {e}")
+                # print(f"Skip worked {e}")
                 pass  # Missing stats ignore
 
     # Main processing
@@ -423,16 +450,16 @@ def update_ace_glicko(players_glicko : pd.DataFrame, idxA, idxB, rAaceNew, rBace
     update_dataframe(players_glicko, idxA, 'return_ace_glicko_rating', rAaceReturnNew)
     update_dataframe(players_glicko, idxB, 'return_ace_glicko_rating', rBaceReturnNew)
 
-def update_first_won_glicko(players_glicko : pd.DataFrame, idxA, idxB, rAfwNew, rBfwNew, rAvFwNew, rBcFwNew):
+def update_first_won_glicko(players_glicko : pd.DataFrame, idxA, idxB, rAfwNew, rBfwNew, rAvFwNew, rBvFwNew):
     update_dataframe(players_glicko, idxA, 'first_won_glicko_rating', rAfwNew)
     update_dataframe(players_glicko, idxB, 'first_won_glicko_rating', rBfwNew)
 
     update_dataframe(players_glicko, idxA, 'return_first_won_glicko_rating', rAvFwNew)
-    update_dataframe(players_glicko, idxB, 'return_first_won_glicko_rating', rBcFwNew)
+    update_dataframe(players_glicko, idxB, 'return_first_won_glicko_rating', rBvFwNew)
 
-def update_second_won_glicko(players_glicko : pd.DataFrame, idxA, idxB, rAfwNew, rBfwNew, rAvFwNew, rBcFwNew):
+def update_second_won_glicko(players_glicko : pd.DataFrame, idxA, idxB, rAfwNew, rBfwNew, rAvFwNew, rBvFwNew):
     update_dataframe(players_glicko, idxA, 'second_won_glicko_rating', rAfwNew)
     update_dataframe(players_glicko, idxB, 'second_won_glicko_rating', rBfwNew)
 
     update_dataframe(players_glicko, idxA, 'return_second_won_glicko_rating', rAvFwNew)
-    update_dataframe(players_glicko, idxB, 'return_second_won_glicko_rating', rBcFwNew)
+    update_dataframe(players_glicko, idxB, 'return_second_won_glicko_rating', rBvFwNew)

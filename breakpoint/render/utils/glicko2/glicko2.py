@@ -16,7 +16,7 @@ class Rating:
         self.rating = (rating - START_RATING) / RATING_SCALE
         self.rd = rd / RATING_SCALE
         self.vol = vol
-        self.last_match_date = datetime(1900, 1, 1)
+        self.last_match_date = datetime(1900, 1, 1).date()
 
     def getRating(self):
         return (self.rating * 173.7178) + 1500 
@@ -35,7 +35,7 @@ class Rating:
     
     def get_pre_rating_rd(self, current_date=None):
         current_date = current_date
-        time_difference = (current_date - self.last_match_date).days
+        time_difference = (current_date - self.last_match_date).days if self.last_match_date != datetime(1900, 1, 1).date() else 1
 
         # Factor to increase RD over time, can be adjusted based on requirements.
         time_factor = (time_difference / RATING_PERIOD) + 1
@@ -43,7 +43,7 @@ class Rating:
 
     def pre_rating_rd(self, current_date=None):
         current_date = current_date
-        time_difference = (current_date - self.last_match_date).days
+        time_difference = (current_date - self.last_match_date).days if self.last_match_date != datetime(1900, 1, 1).date() else 1
 
         # Factor to increase RD over time, can be adjusted based on requirements.
         time_factor = (time_difference / RATING_PERIOD) + 1
@@ -57,7 +57,7 @@ class Rating:
 
         v = self._v(rating_list, rd_list)
         self.vol = self._newVol(rating_list, rd_list, outcome_list, v)
-        self._preRatingRD() # If commented out it's so I can call outside
+        self.pre_rating_rd(current_date) # If commented out it's so I can call outside
         
         self.rd = 1 / sqrt((1 / pow(self.rd, 2)) + (1 / v))
         
