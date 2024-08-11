@@ -10,7 +10,7 @@ TAU = 0.5  # System constant
 RATING_VOL = .06
 
 # Constants
-RATING_PERIOD = 40
+RATING_PERIOD = 45
 
 class Rating:
     # The system constant, which constrains
@@ -41,10 +41,10 @@ class Rating:
         self.setRating(rating)
         self.setRd(rd)
         self.vol = vol
-        self.last_match_date = datetime(1900, 1, 1).date()
+        self.last_match_date = datetime(1800, 1, 1).date()
 
     def get_pre_rating_rd(self, current_date=None):
-        if self.last_match_date != datetime(1900, 1, 1).date() and self.last_match_date != datetime(1900, 1, 1).date() != None:
+        if self.last_match_date != datetime(1800, 1, 1).date() and self.last_match_date != datetime(1800, 1, 1).date() != None:
             time_difference = (current_date - self.last_match_date).days
         else:
            time_difference = 1
@@ -60,7 +60,7 @@ class Rating:
         preRatingRD() -> None
         
         """
-        if self.last_match_date != datetime(1900, 1, 1).date() and self.last_match_date != datetime(1900, 1, 1).date() != None:
+        if self.last_match_date != datetime(1800, 1, 1).date() and self.last_match_date != datetime(1800, 1, 1).date() != None:
             time_difference = (current_date - self.last_match_date).days
         else:
            time_difference = 1

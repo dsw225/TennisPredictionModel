@@ -259,7 +259,7 @@ async def prior_games(df: pd.DataFrame, enddate: datetime.date):
 
     pbar.close()
 
-    new_format.to_csv('testout2.csv', index=False)
+    new_format.to_csv('testcsvs/estout3.csv', index=False)
 
     return new_format
 async def create_new_game_df(game, players_glicko, player_surface_glickos):
