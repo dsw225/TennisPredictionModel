@@ -12,9 +12,9 @@ import math
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 
-MU = 1500
-PHI = 350
-SIGMA = 0.06
+RATING = 1500
+RD = 350
+VOL = 0.06
 TAU = 1.0
 EPSILON = 0.000001
 RATING_PERIOD = 45
@@ -22,77 +22,77 @@ START_DATE = datetime(1800, 1, 1).date()
 
 
 class Rating(object):
-    def __init__(self, mu=MU, phi=PHI, sigma=SIGMA, last_date=START_DATE):
-        self.mu = mu
-        self.phi = phi
-        self.sigma = sigma
+    def __init__(self, rating=RATING, rd=RD, vol=VOL, last_date=START_DATE):
+        self.rating = rating
+        self.rd = rd
+        self.vol = vol
         self.last_date = last_date
 
     def __repr__(self):
         c = type(self)
-        args = (c.__module__, c.__name__, self.mu, self.phi, self.sigma)
-        return '%s.%s(mu=%.3f, phi=%.3f, sigma=%.3f)' % args
+        args = (c.__module__, c.__name__, self.rating, self.rd, self.vol)
+        return '%s.%s(rating=%.3f, rd=%.3f, vol=%.3f)' % args
 
 
 class Glicko2(object):
-    def __init__(self, mu=MU, phi=PHI, sigma=SIGMA, last_date=START_DATE, tau=TAU, epsilon=EPSILON):
-        self.mu = mu
-        self.phi = phi
-        self.sigma = sigma
+    def __init__(self, rating=RATING, rd=RD, vol=VOL, last_date=START_DATE, tau=TAU, epsilon=EPSILON):
+        self.rating = rating
+        self.rd = rd
+        self.vol = vol
         self.last_date = last_date
         self.tau = tau
         self.epsilon = epsilon
 
-    def create_rating(self, mu=None, phi=None, sigma=None, last_date=None):
-        if mu is None:
-            mu = self.mu
-        if phi is None:
-            phi = self.phi
-        if sigma is None:
-            sigma = self.sigma
+    def create_rating(self, rating=None, rd=None, vol=None, last_date=None):
+        if rating is None:
+            rating = self.rating
+        if rd is None:
+            rd = self.rd
+        if vol is None:
+            vol = self.vol
         if last_date is None:
             last_date = self.last_date
-        return Rating(mu, phi, sigma, last_date)
+        return Rating(rating, rd, vol, last_date)
 
     def scale_down(self, rating, ratio=173.7178):
-        mu = (rating.mu - self.mu) / ratio
-        phi = rating.phi / ratio
-        return self.create_rating(mu, phi, rating.sigma)
+        rating = (rating.rating - self.rating) / ratio
+        rd = rating.rd / ratio
+        return self.create_rating(rating, rd, rating.vol)
 
     def scale_up(self, rating, ratio=173.7178):
-        mu = rating.mu * ratio + self.mu
-        phi = rating.phi * ratio
-        return self.create_rating(mu, phi, rating.sigma)
+        rating = rating.rating * ratio + self.rating
+        rd = rating.rd * ratio
+        return self.create_rating(rating, rd, rating.vol)
 
     def reduce_impact(self, rating):
         """The original form is `g(RD)`. This function reduces the impact of
         games as a function of an opponent's RD.
         """
-        return 1. / math.sqrt(1 + (3 * rating.phi ** 2) / (math.pi ** 2))
+        return 1. / math.sqrt(1 + (3 * rating.rd ** 2) / (math.pi ** 2))
 
     def expect_score(self, rating, other_rating, impact):
-        return 1. / (1 + math.exp(-impact * (rating.mu - other_rating.mu)))
+        return 1. / (1 + math.exp(-impact * (rating.rating - other_rating.rating)))
 
-    def determine_sigma(self, rating, difference, variance):
-        """Determines new sigma."""
-        phi = rating.phi
+    def determine_vol(self, rating, difference, variance):
+        """Determines new vol."""
+        rd = rating.rd
         difference_squared = difference ** 2
         # 1. Let a = ln(s^2), and define f(x)
-        alpha = math.log(rating.sigma ** 2)
+        alpha = math.log(rating.vol ** 2)
 
         def f(x):
             """This function is twice the conditional log-posterior density of
-            phi, and is the optimality criterion.
+            rd, and is the optimality criterion.
             """
-            tmp = phi ** 2 + variance + math.exp(x)
+            tmp = rd ** 2 + variance + math.exp(x)
             a = math.exp(x) * (difference_squared - tmp) / (2 * tmp ** 2)
             b = (x - alpha) / (self.tau ** 2)
             return a - b
 
         # 2. Set the initial values of the iterative algorithm.
         a = alpha
-        if difference_squared > phi ** 2 + variance:
-            b = math.log(difference_squared - phi ** 2 - variance)
+        if difference_squared > rd ** 2 + variance:
+            b = math.log(difference_squared - rd ** 2 - variance)
         else:
             k = 1
             while f(alpha - k * math.sqrt(self.tau ** 2)) < 0:
@@ -130,8 +130,8 @@ class Glicko2(object):
         difference = 0
         if not series:
             # If the team didn't play in the series, do only Step 6
-            phi_star = math.sqrt(rating.phi ** 2 + rating.sigma ** 2)
-            return self.scale_up(self.create_rating(rating.mu, phi_star, rating.sigma))
+            rd_star = math.sqrt(rating.rd ** 2 + rating.vol ** 2)
+            return self.scale_up(self.create_rating(rating.rating, rd_star, rating.vol))
         for actual_score, other_rating in series:
             other_rating = self.scale_down(other_rating)
             impact = self.reduce_impact(other_rating)
@@ -140,17 +140,17 @@ class Glicko2(object):
             difference += impact * (actual_score - expected_score)
         difference /= variance_inv
         variance = 1. / variance_inv
-        # Step 5. Determine the new value, Sigma', ot the sigma. This
+        # Step 5. Determine the new value, vol', ot the vol. This
         #         computation requires iteration.
-        sigma = self.determine_sigma(rating, difference, variance)
+        vol = self.determine_vol(rating, difference, variance)
         # Step 6. Update the rating deviation to the new pre-rating period
-        #         value, Phi*.
-        phi_star = math.sqrt(rating.phi ** 2 + sigma ** 2)
-        # Step 7. Update the rating and RD to the new values, Mu' and Phi'.
-        phi = 1. / math.sqrt(1 / phi_star ** 2 + 1 / variance)
-        mu = rating.mu + phi ** 2 * (difference / variance)
+        #         value, rd*.
+        rd_star = math.sqrt(rating.rd ** 2 + vol ** 2)
+        # Step 7. Update the rating and RD to the new values, rating' and rd'.
+        rd = 1. / math.sqrt(1 / rd_star ** 2 + 1 / variance)
+        rating = rating.rating + rd ** 2 * (difference / variance)
         # Step 8. Convert ratings and RD's back to original scale.
-        return self.scale_up(self.create_rating(mu, phi, sigma))
+        return self.scale_up(self.create_rating(rating, rd, vol))
 
     def rate_1vs1(self, rating1, rating2, drawn=False):
         return (self.rate(rating1, [(DRAW if drawn else WIN, rating2)]),
