@@ -30,7 +30,7 @@ class Rating(object):
 
     def __repr__(self):
         c = type(self)
-        args = (c.__module__, c.__name__, self.rating, self.rd, self.vol)
+        args = (c.__module__, c.__name__, self.rating, self.rd, self.vol, self.last_date)
         return '%s.%s(rating=%.3f, rd=%.3f, vol=%.3f)' % args
 
 
@@ -152,9 +152,9 @@ class Glicko2(object):
         # Step 8. Convert ratings and RD's back to original scale.
         return self.scale_up(self.create_rating(rating, rd, vol))
 
-    def rate_1vs1(self, rating1, rating2, drawn=False):
-        return (self.rate(rating1, [(DRAW if drawn else WIN, rating2)]),
-                self.rate(rating2, [(DRAW if drawn else LOSS, rating1)]))
+    def rate_1vs1(self, rating1, rating2):
+        return (self.rate(rating1, [1, rating2]),
+                self.rate(rating2, [0, rating1]))
 
     def quality_1vs1(self, rating1, rating2):
         expected_score1 = self.expect_score(rating1, rating2, self.reduce_impact(rating1))
