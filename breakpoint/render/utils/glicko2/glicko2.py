@@ -8,27 +8,27 @@ RATING_SCALE = 173.7178  # Scaling factor to convert Glicko-2 rating to traditio
 RD_START = 350
 TAU = 0.5  # System constant
 RATING_VOL = .06
-
-# Constants
-RATING_PERIOD = 45
+EPSILON =0.000001
+RATING_PERIOD = 45 #Days
+START_DATE = datetime(1800, 1, 1).date()
 
 class Rating:
     # The system constant, which constrains
     # the change in volatility over time.
 
     def getRating(self):
-        return (self.__rating * 173.7178) + 1500 
+        return (self.__rating * RATING_SCALE) + START_RATING 
 
     def setRating(self, rating):
-        self.__rating = (rating - 1500) / 173.7178
+        self.__rating = (rating - START_RATING) / RATING_SCALE
 
     rating = property(getRating, setRating)
 
     def getRd(self):
-        return self.__rd * 173.7178
+        return self.__rd * RATING_SCALE
 
     def setRd(self, rd):
-        self.__rd = rd / 173.7178
+        self.__rd = rd / RATING_SCALE
 
     rd = property(getRd, setRd)
 
@@ -41,17 +41,17 @@ class Rating:
         self.setRating(rating)
         self.setRd(rd)
         self.vol = vol
-        self.last_match_date = datetime(1800, 1, 1).date()
+        self.last_match_date = START_DATE
 
     def get_pre_rating_rd(self, current_date=None):
-        if self.last_match_date != datetime(1800, 1, 1).date() and self.last_match_date != datetime(1800, 1, 1).date() != None:
+        if self.last_match_date != START_DATE and self.last_match_date != START_DATE != None:
             time_difference = (current_date - self.last_match_date).days
         else:
            time_difference = 1
 
         # Factor to increase RD over time, can be adjusted based on requirements.
         time_factor = (time_difference / RATING_PERIOD) + 1
-        return min(sqrt(self.__rd**2 + ((self.vol ** 2)*time_factor)), RD_START) * RATING_SCALE
+        return sqrt(self.__rd ** 2 + self.vol ** 2 * time_factor) * RATING_SCALE
             
     def _preRatingRD(self, current_date=None):
         """ Calculates and updates the player's rating deviation for the
@@ -60,14 +60,14 @@ class Rating:
         preRatingRD() -> None
         
         """
-        if self.last_match_date != datetime(1800, 1, 1).date() and self.last_match_date != datetime(1800, 1, 1).date() != None:
+        if self.last_match_date != START_DATE and self.last_match_date != START_DATE != None:
             time_difference = (current_date - self.last_match_date).days
         else:
            time_difference = 1
 
         # Factor to increase RD over time, can be adjusted based on requirements.
         time_factor = (time_difference / RATING_PERIOD) + 1
-        self.__rd = min(sqrt(self.__rd**2 + ((self.vol ** 2)*time_factor)), RD_START)
+        self.__rd = sqrt(self.__rd ** 2 + self.vol ** 2 * time_factor)
         self.last_match_date = current_date
         
     def update_player(self, rating_list, RD_list, outcome_list, current_date=None):
@@ -77,8 +77,8 @@ class Rating:
         
         """
         # Convert the rating and rating deviation values for internal use.
-        rating_list = [(x - 1500) / 173.7178 for x in rating_list]
-        RD_list = [x / 173.7178 for x in RD_list]
+        rating_list = [(x - START_RATING) / RATING_SCALE for x in rating_list]
+        RD_list = [x / RATING_SCALE for x in RD_list]
 
         v = self._v(rating_list, RD_list)
         self.vol = self._newVol(rating_list, RD_list, outcome_list, v)
@@ -103,7 +103,7 @@ class Rating:
         """
         #step 1
         a = math.log(self.vol**2)
-        eps = 0.000001
+        eps = EPSILON
         A = a
         
         #step 2

@@ -144,8 +144,6 @@ async def prior_games(df: pd.DataFrame, enddate: datetime.date):
         'a_return_second_won_glicko_rating',
         'b_second_won_glicko_rating',
 
-
-
         'surface_glicko_rating_diff_high',
         'surface_glicko_rating_diff_low',
         'a_surface_glicko_rating',
@@ -213,10 +211,13 @@ async def prior_games(df: pd.DataFrame, enddate: datetime.date):
         'a_surface_return_second_won_glicko_rating',
         'b_surface_second_won_glicko_rating',
 
+        'sets',
+        'games',
+        'tiebreaks',
 
-        'a_b_win',
         'a_odds',
-        'b_odds'
+        'b_odds',
+        'a_b_win',
     ]
     # print(len(game_header))
 
@@ -259,7 +260,7 @@ async def prior_games(df: pd.DataFrame, enddate: datetime.date):
 
     pbar.close()
 
-    new_format.to_csv('testcsvs/estout3.csv', index=False)
+    new_format.to_csv('testcsvs/glickoalltest.csv', index=False)
 
     return new_format
 async def create_new_game_df(game, players_glicko, player_surface_glickos):
@@ -270,6 +271,14 @@ async def create_new_game_df(game, players_glicko, player_surface_glickos):
     w_odds = game['winner_odds']
     l_odds = game['loser_odds']
     date = game['tourney_date']
+    # Add game importance factor
+    # tourney_round = []
+    # tourney_level = []
+
+    #For testing over/under games/sets/tiebreaks
+    w_games, l_games, w_sets, l_sets, _, _, total_tiebreaks = get_score_stats(game)
+    total_sets = w_sets+l_sets
+    total_games = w_games + l_games
 
     # Randomly decide which player is 'a' and which is 'b'
     if random.choice([True, False]):
@@ -546,9 +555,13 @@ async def create_new_game_df(game, players_glicko, player_surface_glickos):
         a_surface_glickos['return_second_won_glicko_rating'].getRating(),
         b_surface_glickos['second_won_glicko_rating'].getRating(),
 
-        a_b_win,
+        total_sets,
+        total_games,
+        total_tiebreaks,
+
         player_a_odds,
-        player_b_odds
+        player_b_odds,
+        a_b_win
     ]
 
     return game_entry

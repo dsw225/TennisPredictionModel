@@ -131,9 +131,12 @@ class Command(BaseCommand):
             'b_pressure_rating' : 'b_pressure_rating',
             'b_avg_vs_elo' : 'b_avg_vs_elo',
             'b_matches_played' : 'b_matches_played',
-            'a_b_win' : 'a_b_win',
+            'sets' : 'sets',
+            'games' : 'games',
+            'tiebreaks' : 'tiebreaks',
             'a_odds' : 'a_odds',
-            'b_odds' : 'b_odds'
+            'b_odds' : 'b_odds',
+            'a_b_win' : 'a_b_win'
         }
 
         # Iterate over DataFrame rows and create model instances

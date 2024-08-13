@@ -13,6 +13,7 @@ from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 
 RATING = 1500
+SCALE_FACTOR = 173.7178
 RD = 350
 VOL = 0.06
 TAU = 1.0
@@ -54,12 +55,12 @@ class Glicko2(object):
             last_date = self.last_date
         return Rating(rating, rd, vol, last_date)
 
-    def scale_down(self, rating, ratio=173.7178):
+    def scale_down(self, rating, ratio=SCALE_FACTOR):
         rating = (rating.rating - self.rating) / ratio
         rd = rating.rd / ratio
         return self.create_rating(rating, rd, rating.vol)
 
-    def scale_up(self, rating, ratio=173.7178):
+    def scale_up(self, rating, ratio=SCALE_FACTOR):
         rating = rating.rating * ratio + self.rating
         rd = rating.rd * ratio
         return self.create_rating(rating, rd, rating.vol)
