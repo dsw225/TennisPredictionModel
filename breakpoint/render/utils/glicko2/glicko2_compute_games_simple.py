@@ -260,7 +260,7 @@ async def prior_games(df: pd.DataFrame, enddate: datetime.date):
 
     pbar.close()
 
-    new_format.to_csv('testcsvs/glickoalltest.csv', index=False)
+    new_format.to_csv('testcsvs/glickoalltestw.csv', index=False)
 
     return new_format
 async def create_new_game_df(game, players_glicko, player_surface_glickos):
@@ -279,6 +279,13 @@ async def create_new_game_df(game, players_glicko, player_surface_glickos):
     w_games, l_games, w_sets, l_sets, _, _, total_tiebreaks = get_score_stats(game)
     total_sets = w_sets+l_sets
     total_games = w_games + l_games
+    # print(total_games)
+    surface_ratios = {
+        "Hard": 22.75, "Clay": 21.29, "Grass": 22.87
+    }
+
+    total_games = 1 if total_games > surface_ratios.get(game['surface'], 22.5) else 0
+    total_sets = 1 if total_sets > 2.5 and game['best_of'] < 5 else 0 if game['best_of'] < 5 else -20
 
     # Randomly decide which player is 'a' and which is 'b'
     if random.choice([True, False]):
