@@ -8,6 +8,7 @@ import traceback
 import numpy as np
 from render.utils.glicko2.glicko2_updater import *
 import arff
+import copy
 
 async def prior_games(df: pd.DataFrame, enddate: datetime.date):
     # Changing dataframe fix for future
@@ -54,11 +55,17 @@ async def prior_games(df: pd.DataFrame, enddate: datetime.date):
         'return_second_won_glicko_rating': [Rating() for _ in players_to_glicko],
     }
 
+    # Create deep copies of the data for each DataFrame
+    data_copy_1 = copy.deepcopy(data)
+    data_copy_2 = copy.deepcopy(data)
+    data_copy_3 = copy.deepcopy(data)
+    data_copy_4 = copy.deepcopy(data)
 
-    players_glicko = pd.DataFrame(data, columns=new_header)
-    clay_players_glicko = pd.DataFrame(data, columns=new_header)
-    grass_players_glicko = pd.DataFrame(data, columns=new_header)
-    hard_players_glicko = pd.DataFrame(data, columns=new_header)
+    # Initialize DataFrames with separate data copies
+    players_glicko = pd.DataFrame(data_copy_1, columns=new_header)
+    clay_players_glicko = pd.DataFrame(data_copy_2, columns=new_header)
+    grass_players_glicko = pd.DataFrame(data_copy_3, columns=new_header)
+    hard_players_glicko = pd.DataFrame(data_copy_4, columns=new_header)
 
     game_header = [
         'tourney_id',
