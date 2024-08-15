@@ -46,8 +46,7 @@ def get_score_stats(row):
 
 def primary_glicko(rA: Rating, rB: Rating, row):
     date = row['tourney_date']
-    outcome_list = [1]
-    rA_new, rB_new = new_rating_glicko2(rA, rB, outcome_list, date)
+    rA_new, rB_new = new_rating_glicko2(rA, rB, 1, date)
     return rA_new, rB_new
 
 def points_sets_games_glicko(rAset: Rating, rBset: Rating, rAgame: Rating, rBgame: Rating, rApoint: Rating, rBpoint: Rating, row, w_sets, l_sets, w_games, l_games):
@@ -70,9 +69,9 @@ def points_sets_games_glicko(rAset: Rating, rBset: Rating, rAgame: Rating, rBgam
     deltaSetNew = w_sets/(w_sets+l_sets) if w_sets+w_sets > 0 else 0
     deltaGameNew = w_games/(w_games+l_games) if w_sets+l_sets > 0 else 0
 
-    rApointNew, rBpointNew = new_rating_glicko2(rApoint, rBpoint, [deltaPointNew], date)
-    rAsetNew, rBsetNew = new_rating_glicko2(rAset, rBset, [deltaSetNew], date)
-    rAgameNew, rBgameNew = new_rating_glicko2(rAgame, rBgame, [deltaGameNew], date)
+    rApointNew, rBpointNew = new_rating_glicko2(rApoint, rBpoint, deltaPointNew, date)
+    rAsetNew, rBsetNew = new_rating_glicko2(rAset, rBset, deltaSetNew, date)
+    rAgameNew, rBgameNew = new_rating_glicko2(rAgame, rBgame, deltaGameNew, date)
 
     return rApointNew, rBpointNew, rAsetNew, rBsetNew, rAgameNew, rBgameNew
 
@@ -82,7 +81,7 @@ def tb_glicko(rAtb: Rating, rBtb: Rating, tie_breaks_won_winner, tie_breaks_play
     rAtbNew, rBtbNew = rAtb, rBtb
 
     if tie_breaks_played > 0:
-        rAtbNew, rBtbNew = new_rating_glicko2(rAtb, rBtb, [tb_winner], date)
+        rAtbNew, rBtbNew = new_rating_glicko2(rAtb, rBtb, tb_winner, date)
 
     return rAtbNew, rBtbNew
 
@@ -106,17 +105,22 @@ def return_serve_glicko(rAservice: Rating, rBservice: Rating, rAreturn: Rating, 
     # delta_aReturn = 1 - delta_bServe
     new_delta_bServe = (playerB_serveRating/(playerB_serveRating + playerA_returnRating * ratio)) - (playerA_returnRating * ratio/(playerB_serveRating + playerA_returnRating * ratio))
 
-    rAserviceNew, rBreturnNew = new_rating_glicko2(rAservice, rBreturn, [new_delta_aServe], date)
-    rBserviceNew, rAreturnNew = new_rating_glicko2(rBservice, rAreturn, [new_delta_bServe], date)
+    rAserviceNew, rBreturnNew = new_rating_glicko2(rAservice, rBreturn, new_delta_aServe, date)
+    rBserviceNew, rAreturnNew = new_rating_glicko2(rBservice, rAreturn, new_delta_bServe, date)
 
     return rAserviceNew, rBserviceNew, rAreturnNew, rBreturnNew
+
+
 
 def ace_glicko(rAace: Rating, rBace: Rating, rAaceReturn: Rating, rBaceReturn: Rating, row):
     date = row['tourney_date']
     surface = row['surface']
 
-    #Surface minimizer later
-    ratio = 1
+    surface_ratios = {
+        "Hard": .5 / 0.088888, "Clay": .5 / 0.05554, "Grass": .5 / 0.10110
+    }
+
+    ratio =  surface_ratios.get(surface, .5 / .08)
 
     wAcePct = (row['w_ace']/row['w_svpt']) * ratio
     lAcePct = (row['l_ace']/row['l_svpt']) * ratio
@@ -127,40 +131,70 @@ def first_won_glicko(rAfw: Rating, rBfw: Rating, rAvFw: Rating, rBvFw: Rating, r
     date = row['tourney_date']
     surface = row['surface']
 
-    #Surface minimizer later
-    ratio = 1
+    surface_ratios = {
+        "Hard": .5 / 0.72502, "Clay": .5 / 0.69128, "Grass": .5 / 0.74393
+    }
+
+    ratio =  surface_ratios.get(surface, .5 / .72)
 
     w1stIn = row['w_1stWon']/row['w_1stIn'] * ratio
     l1stIn = row['l_1stWon']/row['l_1stIn'] * ratio
 
     return base_competing_glicko(rAfw, rBfw, rAvFw, rBvFw, w1stIn, l1stIn, date)
 
+# total_clay = 0
+# total_grass = 0
+# total_hard = 0
+# num_clay = 0
+# num_grass = 0
+# num_hard = 0
 def second_won_glicko(rAfw: Rating, rBfw: Rating, rAvFw: Rating, rBvFw: Rating, row):
+    # global total_clay
+    # global total_grass
+    # global total_hard
+    # global num_clay
+    # global num_grass
+    # global num_hard
     date = row['tourney_date']
     surface = row['surface']
 
-    #Surface minimizer later
-    ratio = 1
+    surface_ratios = {
+        "Hard": .5 / 0.50975, "Clay": .5 / 0.50792, "Grass": .5 / 0.52159
+    }
+
+    ratio =  surface_ratios.get(surface, .5 / .515)
 
     w1stIn = row['w_2ndWon']/(row['w_svpt']-row['w_1stIn']) * ratio
     l1stIn = row['l_2ndWon']/(row['l_svpt']-row['l_1stIn']) * ratio
 
+    # if(surface == "Clay"):
+    #     total_clay += w1stIn + l1stIn
+    #     num_clay += 2
+    # elif(surface == "Hard"):
+    #     total_hard += w1stIn + l1stIn
+    #     num_hard += 2
+    # elif(surface == "Grass"):
+    #     total_grass += w1stIn + l1stIn
+    #     num_grass += 2
+
+    # print(f"Percent 1st Won Clay: {total_clay/num_clay} Grass: {total_grass/num_grass} Hard: {total_hard/num_hard}")
+
     return base_competing_glicko(rAfw, rBfw, rAvFw, rBvFw, w1stIn, l1stIn, date)
 
 def base_competing_glicko(rAfirst: Rating, rBfirst: Rating, rAsecond: Rating, rBsecond: Rating, aPct, bPct, date):
-    rAfirstNew, rBsecondNew = new_rating_glicko2(rAfirst, rBsecond, [aPct], date)
-    rBfirstNew, rAsecondNew = new_rating_glicko2(rBfirst, rAsecond, [bPct], date)
+    rAfirstNew, rBsecondNew = new_rating_glicko2(rAfirst, rBsecond, aPct, date)
+    rBfirstNew, rAsecondNew = new_rating_glicko2(rBfirst, rAsecond, bPct, date)
 
     return rAfirstNew, rBfirstNew, rAsecondNew, rBsecondNew
 
 def new_rating_glicko2(ratingA: Rating, ratingB: Rating, outcome_list, date):
-    rating_list = [ratingB.rating]
-    rd_list = [ratingB.rd]
+    rating_list = ratingB.rating
+    rd_list = ratingB.rd
     ratingA.update_player(rating_list, rd_list, outcome_list, date)
 
-    rating_list = [ratingA.rating]
-    rd_list = [ratingA.rd]
-    ratingB.update_player(rating_list, rd_list, [1 - x for x in outcome_list], date)
+    rating_list = ratingA.rating
+    rd_list = ratingA.rd
+    ratingB.update_player(rating_list, rd_list, 1 -  outcome_list, date)
     return ratingA, ratingB
 
 def return_to_serve_ratio(surface):
