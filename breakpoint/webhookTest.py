@@ -8,14 +8,30 @@ with open('breakpoint/hidden/webhooks.txt', 'r') as file:
 WEBHOOK_URL = data
 
 def send_discord_embed():
+    char = 'w'
+
+    if char == 'm':
+        gender = "men"
+        name = "ATP"
+        icon = "https://i0.wp.com/passingshot.productions/wp-content/uploads/2023/12/vecteezy_atp-tour-logo-symbol-tournament-open-men-tennis-association_23154125.jpg?resize=1200%2C1200&ssl=1"
+        color = 2403043
+    else:
+        gender = "women"
+        name = "WTA"
+        icon = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQgpAgGbgmgnUfLSTo4spYwcHZhKynuDvgniA&s"
+        color = 7873532
+
 
     embed = {
         # "image": {
         #     "url": 'https://i.sstatic.net/Fzh0w.png'
         # },
-        "title": "August 15th ATP BREAKPOINT Bets",
-        "description": "Here is todays betting slate for [directions click here](<https://discordapp.com/channels/1273303003943932038/1273405553116188744>)",
-        "color": 2403043, #2403043 is ATP #7873532 is WTA  # This is a color code in decimal
+        "author": {
+            "name": f"{name} BREAKPOINT Bets",  # Set to an empty string to hide the name
+            "icon_url": icon  # URL to the author's icon image
+        },
+        "description": f"**August 15th, 2024** \nTodays {gender}s betting slate for further [information click here](<https://discordapp.com/channels/1273303003943932038/1273405553116188744>)",
+        "color": color, #2403043 is ATP #7873532 is WTA  # This is a color code in decimal
         "fields": [
             {
                 "name": "**Player A** - *ATP 2.* vs. **Player B** - *ATP 5.*",
