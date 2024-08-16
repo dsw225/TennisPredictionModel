@@ -1,6 +1,7 @@
 breakpoint/data/scrapers/proxy_addresses
 breakpoint/myenv
 breakpoint/testcsvs
+breakpoint/hidden
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
