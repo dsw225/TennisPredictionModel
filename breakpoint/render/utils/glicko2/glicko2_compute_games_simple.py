@@ -34,7 +34,7 @@ async def prior_games(df: pd.DataFrame, enddate: datetime.date):
     players_to_glicko = combined_names.drop_duplicates().tolist()
 
     new_header = ['player', 'matches_played', 'glicko_rating', 'point_glicko_rating', 'game_glicko_rating', 
-                  'set_glicko_rating', 'service_game_glicko_rating', 'return_game_glicko_rating', 'tie_break_glicko_rating', 'ace_glicko_rating', 
+                  'set_glicko_rating', 'service_game_glicko_rating', 'return_game_glicko_rating', 'tie_break_glicko_rating', 'bp_glicko_rating', 'ace_glicko_rating', 
                   'return_ace_glicko_rating', 'first_won_glicko_rating', 'return_first_won_glicko_rating', 'second_won_glicko_rating', 'return_second_won_glicko_rating',]
 
     data = {
@@ -47,6 +47,7 @@ async def prior_games(df: pd.DataFrame, enddate: datetime.date):
         'service_game_glicko_rating': [Rating() for _ in players_to_glicko],
         'return_game_glicko_rating': [Rating() for _ in players_to_glicko],
         'tie_break_glicko_rating': [Rating() for _ in players_to_glicko],
+        'bp_glicko_rating': [Rating() for _ in players_to_glicko],
         'ace_glicko_rating': [Rating() for _ in players_to_glicko],
         'return_ace_glicko_rating': [Rating() for _ in players_to_glicko],
         'first_won_glicko_rating': [Rating() for _ in players_to_glicko],
@@ -136,6 +137,12 @@ async def prior_games(df: pd.DataFrame, enddate: datetime.date):
         'a_tiebreak_glicko_rd',
         'b_tiebreak_glicko_rd',
 
+        'bp_glicko_rating_diff',
+        'a_bp_glicko_rating',
+        'b_bp_glicko_rating',
+        'a_bp_glicko_rd',
+        'b_bp_glicko_rd',
+
         'ace_glicko_rating_diff',
         'a_ace_glicko_rating',
         'b_return_ace_glicko_rating',
@@ -215,6 +222,12 @@ async def prior_games(df: pd.DataFrame, enddate: datetime.date):
         'b_surface_tiebreak_glicko_rating',
         'a_surface_tiebreak_glicko_rd',
         'b_surface_tiebreak_glicko_rd',
+
+        'surface_bp_glicko_rating_diff',
+        'a_surface_bp_glicko_rating',
+        'b_surface_bp_glicko_rating',
+        'a_surface_bp_glicko_rd',
+        'b_surface_bp_glicko_rd',
 
         'surface_ace_glicko_rating_diff',
         'a_surface_ace_glicko_rating',
@@ -432,6 +445,12 @@ async def create_new_game_df(game, players_glicko, player_surface_glickos):
         b_player_glickos['tie_break_glicko_rating'].getRating(),
         a_player_glickos['tie_break_glicko_rating'].getRd(),
         b_player_glickos['tie_break_glicko_rating'].getRd(),
+
+        a_player_glickos['bp_glicko_rating'].getRating() - b_player_glickos['bp_glicko_rating'].getRating(),
+        a_player_glickos['bp_glicko_rating'].getRating(),
+        b_player_glickos['bp_glicko_rating'].getRating(),
+        a_player_glickos['bp_glicko_rating'].getRd(),
+        b_player_glickos['bp_glicko_rating'].getRd(),
         
         a_player_glickos['ace_glicko_rating'].getRating() - b_player_glickos['return_ace_glicko_rating'].getRating(),
         a_player_glickos['ace_glicko_rating'].getRating(),
@@ -511,6 +530,12 @@ async def create_new_game_df(game, players_glicko, player_surface_glickos):
         b_surface_glickos['tie_break_glicko_rating'].getRating(),
         a_surface_glickos['tie_break_glicko_rating'].getRd(),
         b_surface_glickos['tie_break_glicko_rating'].getRd(),
+
+        a_surface_glickos['bp_glicko_rating'].getRating() - b_surface_glickos['bp_glicko_rating'].getRating(),
+        a_surface_glickos['bp_glicko_rating'].getRating(),
+        b_surface_glickos['bp_glicko_rating'].getRating(),
+        a_surface_glickos['bp_glicko_rating'].getRd(),
+        b_surface_glickos['bp_glicko_rating'].getRd(),
         
         a_surface_glickos['ace_glicko_rating'].getRating() - b_surface_glickos['return_ace_glicko_rating'].getRating(),
         a_surface_glickos['ace_glicko_rating'].getRating(),

@@ -85,6 +85,16 @@ def tb_glicko(rAtb: Rating, rBtb: Rating, tie_breaks_won_winner, tie_breaks_play
 
     return rAtbNew, rBtbNew
 
+def bp_glicko(rAtb: Rating, rBtb: Rating, bp_won_winner, bp_played, date):
+    tb_winner = bp_won_winner / bp_played if bp_played > 0 else 0
+
+    rAtbNew, rBtbNew = rAtb, rBtb
+
+    if bp_played > 0:
+        rAtbNew, rBtbNew = new_rating_glicko2(rAtb, rBtb, tb_winner, date)
+
+    return rAtbNew, rBtbNew
+
 def return_serve_glicko(rAservice: Rating, rBservice: Rating, rAreturn: Rating, rBreturn: Rating, row):
     date = row['tourney_date']
     surface = row['surface']

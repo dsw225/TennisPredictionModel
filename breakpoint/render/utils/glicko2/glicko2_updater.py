@@ -53,8 +53,15 @@ async def update_glickos(players_glicko : pd.DataFrame, row):
         rAtbNew, rBtbNew = tb_glicko(players_glicko.at[idxA, 'tie_break_glicko_rating'], players_glicko.at[idxB, 'tie_break_glicko_rating'], tie_breaks_won_winner, tie_breaks_played, row['tourney_date'])
         update_tb_glicko(players_glicko, idxA, idxB, rAtbNew, rBtbNew)
 
+
         # Serve/Return Update
         try:
+            w_bp = row['w_bpSaved'] + (row['l_bpFaced'] - row['l_bpSaved'])
+            bps = row['w_bpFaced'] + row['l_bpFaced']
+
+            rAbpNew, rBbpNew = tb_glicko(players_glicko.at[idxA, 'bp_glicko_rating'], players_glicko.at[idxB, 'bp_glicko_rating'], w_bp, bps, row['tourney_date'])
+            update_bp_glicko(players_glicko, idxA, idxB, rAbpNew, rBbpNew)
+
             rAservice = players_glicko.at[idxA, 'service_game_glicko_rating']
             rBservice = players_glicko.at[idxB, 'service_game_glicko_rating']
 
@@ -128,6 +135,7 @@ async def parse_recent(recent_matches_a: pd.DataFrame, recent_matches_b: pd.Data
         'recent_service_game_glicko_rating': 'oppo_recent_service_game_glicko_rating',
         'recent_return_game_glicko_rating': 'oppo_recent_return_game_glicko_rating',
         'recent_tie_break_glicko_rating': 'oppo_recent_tie_break_glicko_rating',
+        'recent_bp_glicko_rating': 'oppo_recent_bp_glicko_rating',
         "recent_ace_glicko_rating": "oppo_recent_ace_glicko_rating",
         "recent_return_ace_glicko_rating": "oppo_recent_return_ace_glicko_rating",
         "recent_first_won_glicko_rating": "oppo_recent_first_won_glicko_rating",
@@ -144,6 +152,7 @@ async def parse_recent(recent_matches_a: pd.DataFrame, recent_matches_b: pd.Data
         'recent_surface_service_game_glicko_rating': 'oppo_recent_surface_service_game_glicko_rating',
         'recent_surface_return_game_glicko_rating': 'oppo_recent_surface_return_game_glicko_rating',
         'recent_surface_tie_break_glicko_rating': 'oppo_recent_surface_tie_break_glicko_rating',
+        'recent_surface_bp_glicko_rating': 'oppo_recent_surface_bp_glicko_rating',
         "recent_surface_ace_glicko_rating": "oppo_recent_surface_ace_glicko_rating",
         "recent_surface_return_ace_glicko_rating": "oppo_recent_surface_return_ace_glicko_rating",
         "recent_surface_first_won_glicko_rating": "oppo_recent_surface_first_won_glicko_rating",
@@ -185,6 +194,7 @@ async def process_player_matches(player, recent_matches: pd.DataFrame, game):
             "recent_service_game_glicko_rating": Rating(),
             "recent_return_game_glicko_rating": Rating(),
             "recent_tie_break_glicko_rating": Rating(),
+            "recent_bp_glicko_rating": Rating(),
             "recent_ace_glicko_rating": Rating(),
             "recent_return_ace_glicko_rating": Rating(),
             "recent_first_won_glicko_rating": Rating(),
@@ -201,6 +211,7 @@ async def process_player_matches(player, recent_matches: pd.DataFrame, game):
             "recent_surface_service_game_glicko_rating": Rating(),
             "recent_surface_return_game_glicko_rating": Rating(),
             "recent_surface_tie_break_glicko_rating": Rating(),
+            "recent_surface_bp_glicko_rating": Rating(),
             "recent_surface_ace_glicko_rating": Rating(),
             "recent_surface_return_ace_glicko_rating": Rating(),
             "recent_surface_first_won_glicko_rating": Rating(),
@@ -232,6 +243,7 @@ async def process_player_matches(player, recent_matches: pd.DataFrame, game):
             "service_game_glicko_rating": f"{prefix}service_game_glicko_rating",
             "return_game_glicko_rating": f"{prefix}return_game_glicko_rating",
             "tie_break_glicko_rating": f"{prefix}tie_break_glicko_rating",
+            "bp_glicko_rating": f"{prefix}bp_glicko_rating",
             "ace_glicko_rating": f"{prefix}ace_glicko_rating",
             "return_ace_glicko_rating": f"{prefix}return_ace_glicko_rating",
             "first_won_glicko_rating": f"{prefix}first_won_glicko_rating",
@@ -246,6 +258,7 @@ async def process_player_matches(player, recent_matches: pd.DataFrame, game):
             "surface_service_game_glicko_rating": f"{prefix}surface_service_game_glicko_rating",
             "surface_return_game_glicko_rating": f"{prefix}surface_return_game_glicko_rating",
             "surface_tie_break_glicko_rating": f"{prefix}surface_tie_break_glicko_rating",
+            "surface_bp_glicko_rating": f"{prefix}surface_bp_glicko_rating",
             "surface_ace_glicko_rating": f"{prefix}surface_ace_glicko_rating",
             "surface_return_ace_glicko_rating": f"{prefix}surface_return_ace_glicko_rating",
             "surface_first_won_glicko_rating": f"{prefix}surface_first_won_glicko_rating",
@@ -262,6 +275,7 @@ async def process_player_matches(player, recent_matches: pd.DataFrame, game):
             "service_game_glicko_rating": row[f'oppo_{prefix}service_glicko_rating'] if ~np.isnan(row[f'oppo_{prefix}service_glicko_rating']) else 1500,
             "return_game_glicko_rating": row[f'oppo_{prefix}return_glicko_rating'] if ~np.isnan(row[f'oppo_{prefix}return_glicko_rating']) else 1500,
             "tie_break_glicko_rating": row[f'oppo_{prefix}tb_glicko_rating'] if ~np.isnan(row[f'oppo_{prefix}tb_glicko_rating']) else 1500,
+            "bp_glicko_rating": row[f'oppo_{prefix}tb_glicko_rating'] if ~np.isnan(row[f'oppo_{prefix}tb_glicko_rating']) else 1500,
             "ace_glicko_rating": row[f'oppo_{prefix}ace_glicko_rating'] if ~np.isnan(row[f'oppo_{prefix}ace_glicko_rating']) else 1500,
             "return_ace_glicko_rating": row[f'oppo_{prefix}return_ace_glicko_rating'] if ~np.isnan(row[f'oppo_{prefix}return_ace_glicko_rating']) else 1500,
             "first_won_glicko_rating": row[f'oppo_{prefix}first_won_glicko_rating'] if ~np.isnan(row[f'oppo_{prefix}first_won_glicko_rating']) else 1500,
@@ -276,6 +290,7 @@ async def process_player_matches(player, recent_matches: pd.DataFrame, game):
             "surface_service_game_glicko_rating": row[f'oppo_{prefix}surface_service_glicko_rating'] if ~np.isnan(row[f'oppo_{prefix}surface_service_glicko_rating']) else 1500,
             "surface_return_game_glicko_rating": row[f'oppo_{prefix}surface_return_glicko_rating'] if ~np.isnan(row[f'oppo_{prefix}surface_return_glicko_rating']) else 1500,
             "surface_tie_break_glicko_rating": row[f'oppo_{prefix}surface_tb_glicko_rating'] if ~np.isnan(row[f'oppo_{prefix}surface_tb_glicko_rating']) else 1500,
+            "surface_bp_glicko_rating": row[f'oppo_{prefix}surface_tb_glicko_rating'] if ~np.isnan(row[f'oppo_{prefix}surface_tb_glicko_rating']) else 1500,
             "surface_ace_glicko_rating": row[f'oppo_{prefix}surface_ace_glicko_rating'] if ~np.isnan(row[f'oppo_{prefix}surface_ace_glicko_rating']) else 1500,
             "surface_return_ace_glicko_rating": row[f'oppo_{prefix}surface_return_ace_glicko_rating'] if ~np.isnan(row[f'oppo_{prefix}surface_return_ace_glicko_rating']) else 1500,
             "surface_first_won_glicko_rating": row[f'oppo_{prefix}surface_first_won_glicko_rating'] if ~np.isnan(row[f'oppo_{prefix}surface_first_won_glicko_rating']) else 1500,
@@ -294,8 +309,10 @@ async def process_player_matches(player, recent_matches: pd.DataFrame, game):
                     result[glicko_keys["surface_set_glicko_rating"]], opponent_glicko["surface_set_glicko_rating"], result[glicko_keys["surface_game_glicko_rating"]], opponent_glicko["surface_game_glicko_rating"],
                     result[glicko_keys["surface_point_glicko_rating"]], opponent_glicko["surface_point_glicko_rating"], row, w_sets, l_sets, w_games, l_games
                 )
-                result[glicko_keys["surface_tie_break_glicko_rating"]], _ = tb_glicko(result[glicko_keys["surface_tie_break_glicko_rating"]], opponent_glicko["surface_tie_break_glicko_rating"], row, tie_breaks_won_winner, tie_breaks_won_loser, tie_breaks_played)
                 try:
+                    result[glicko_keys["surface_tie_break_glicko_rating"]], _ = tb_glicko(result[glicko_keys["surface_tie_break_glicko_rating"]], opponent_glicko["surface_tie_break_glicko_rating"], tie_breaks_won_winner, tie_breaks_played)
+                    result[glicko_keys["surface_bp_glicko_rating"]], _ = bp_glicko(result[glicko_keys["surface_bp_glicko_rating"]], opponent_glicko["surface_bp_glicko_rating"], row)
+                    
                     result[glicko_keys["surface_service_game_glicko_rating"]], _, result[glicko_keys["surface_return_game_glicko_rating"]], _ = return_serve_glicko(
                         result[glicko_keys["surface_service_game_glicko_rating"]], opponent_glicko["surface_service_game_glicko_rating"], result[glicko_keys["surface_return_game_glicko_rating"]], opponent_glicko["surface_return_game_glicko_rating"], row
                     )
@@ -435,6 +452,10 @@ def update_points_sets_games_glicko(players_glicko : pd.DataFrame, idxA, idxB, r
 def update_tb_glicko(players_glicko : pd.DataFrame, idxA, idxB, rAtbNew, rBtbNew):
     update_dataframe(players_glicko, idxA, 'tie_break_glicko_rating', rAtbNew)
     update_dataframe(players_glicko, idxB, 'tie_break_glicko_rating', rBtbNew)
+    
+def update_bp_glicko(players_glicko : pd.DataFrame, idxA, idxB, rAtbNew, rBtbNew):
+    update_dataframe(players_glicko, idxA, 'bp_glicko_rating', rAtbNew)
+    update_dataframe(players_glicko, idxB, 'bp_glicko_rating', rBtbNew)
 
 def update_return_serve_glicko(players_glicko : pd.DataFrame, idxA, idxB, rAserviceNew, rBserviceNew, rAreturnNew, rBreturnNew):
     update_dataframe(players_glicko, idxA, 'service_game_glicko_rating', rAserviceNew)
