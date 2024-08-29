@@ -74,7 +74,7 @@ async def prior_games(df: pd.DataFrame, enddate: datetime.date):
         'surface',
         'best_of',
         'match_num',
-        # 'tourney_level', #Performs much worse?
+        'tourney_level', #Performs much worse?
         'tourney_round',
 
         'a_player_id',
@@ -82,11 +82,17 @@ async def prior_games(df: pd.DataFrame, enddate: datetime.date):
         'a_player_age',
         'a_player_slug',
         'a_player_rank',
+        'a_player_rank_points',
         'b_player_id',
         'b_player_name',
         'b_player_age',
         'b_player_slug',
         'b_player_rank',
+        'b_player_rank_points',
+
+        'rank_diff',
+        'rank_points_diff',
+        'age_diff',
 
         'glicko_rating_diff',
         'a_glicko_rating',
@@ -295,7 +301,7 @@ async def prior_games(df: pd.DataFrame, enddate: datetime.date):
 
     pbar.close()
 
-    new_format.to_csv('testcsvs/glickoUpdated.csv', index=False)
+    new_format.to_csv('testcsvs/glickoUpdatedTest.csv', index=False)
 
     return new_format
 
@@ -305,6 +311,8 @@ async def create_new_game_df(game, players_glicko, player_surface_glickos):
     w_age = game['winner_age']
     l_age = game['loser_age']
     w_rank = game['winner_rank']
+    w_rank_points = game['winner_rank_points']
+    l_rank_points = game['loser_rank_points']
     l_rank = game['loser_rank']
     w_odds = game['winner_odds']
     l_odds = game['loser_odds']
@@ -337,12 +345,14 @@ async def create_new_game_df(game, players_glicko, player_surface_glickos):
     if random.choice([True, False]):
         player_a, player_b = w_player, l_player
         player_a_rank, player_b_rank = w_rank, l_rank
+        player_a_rank_points, player_b_rank_points = w_rank_points, l_rank_points
         player_a_odds, player_b_odds = w_odds, l_odds
         player_a_age, player_b_age = w_age, l_age
         a_b_win = 1
     else:
         player_a, player_b = l_player, w_player
         player_a_rank, player_b_rank = l_rank, w_rank
+        player_a_rank_points, player_b_rank_points = l_rank_points, w_rank_points
         player_a_odds, player_b_odds = l_odds, w_odds
         player_a_age, player_b_age = l_age, w_age
         a_b_win = 0
@@ -362,175 +372,181 @@ async def create_new_game_df(game, players_glicko, player_surface_glickos):
         game['surface'],
         game['best_of'],
         game['match_num'],
-        # tourney_level,
+        tourney_level,
         tourney_round,
         0,
         player_a,
         player_a_age,
         '',
         player_a_rank,
+        player_a_rank_points,
         0,
         player_b,
         player_b_age,
         '',
         player_b_rank,
+        player_b_rank_points,
+
+        player_a_rank - player_b_rank,
+        player_a_rank_points - player_b_rank_points,
+        player_a_age - player_b_age,
 
         a_player_glickos['glicko_rating'].getRating() - b_player_glickos['glicko_rating'].getRating(),
         a_player_glickos['glicko_rating'].getRating(),
         b_player_glickos['glicko_rating'].getRating(),
-        a_player_glickos['glicko_rating'].get_pre_rating_rd(date),
-        b_player_glickos['glicko_rating'].get_pre_rating_rd(date),
+        a_player_glickos['glicko_rating'].getRd(),
+        b_player_glickos['glicko_rating'].getRd(),
 
         a_player_glickos['point_glicko_rating'].getRating() - b_player_glickos['point_glicko_rating'].getRating(),
         a_player_glickos['point_glicko_rating'].getRating(),
         b_player_glickos['point_glicko_rating'].getRating(),
-        a_player_glickos['point_glicko_rating'].get_pre_rating_rd(date),
-        b_player_glickos['point_glicko_rating'].get_pre_rating_rd(date),
+        a_player_glickos['point_glicko_rating'].getRd(),
+        b_player_glickos['point_glicko_rating'].getRd(),
 
         a_player_glickos['game_glicko_rating'].getRating() - b_player_glickos['game_glicko_rating'].getRating(),
         a_player_glickos['game_glicko_rating'].getRating(),
         b_player_glickos['game_glicko_rating'].getRating(),
-        a_player_glickos['game_glicko_rating'].get_pre_rating_rd(date),
-        b_player_glickos['game_glicko_rating'].get_pre_rating_rd(date),
+        a_player_glickos['game_glicko_rating'].getRd(),
+        b_player_glickos['game_glicko_rating'].getRd(),
 
         a_player_glickos['set_glicko_rating'].getRating() - b_player_glickos['set_glicko_rating'].getRating(),
         a_player_glickos['set_glicko_rating'].getRating(),
         b_player_glickos['set_glicko_rating'].getRating(),
-        a_player_glickos['set_glicko_rating'].get_pre_rating_rd(date),
-        b_player_glickos['set_glicko_rating'].get_pre_rating_rd(date),
+        a_player_glickos['set_glicko_rating'].getRd(),
+        b_player_glickos['set_glicko_rating'].getRd(),
         
         a_player_glickos['service_game_glicko_rating'].getRating() - b_player_glickos['return_game_glicko_rating'].getRating(),
         a_player_glickos['service_game_glicko_rating'].getRating(),
         b_player_glickos['return_game_glicko_rating'].getRating(),
-        a_player_glickos['service_game_glicko_rating'].get_pre_rating_rd(date),
-        b_player_glickos['return_game_glicko_rating'].get_pre_rating_rd(date),
+        a_player_glickos['service_game_glicko_rating'].getRd(),
+        b_player_glickos['return_game_glicko_rating'].getRd(),
         
         a_player_glickos['return_game_glicko_rating'].getRating() - b_player_glickos['service_game_glicko_rating'].getRating(),
         a_player_glickos['return_game_glicko_rating'].getRating(),
         b_player_glickos['service_game_glicko_rating'].getRating(),
-        a_player_glickos['return_game_glicko_rating'].get_pre_rating_rd(date),
-        b_player_glickos['service_game_glicko_rating'].get_pre_rating_rd(date),
+        a_player_glickos['return_game_glicko_rating'].getRd(),
+        b_player_glickos['service_game_glicko_rating'].getRd(),
 
         a_player_glickos['tie_break_glicko_rating'].getRating() - b_player_glickos['tie_break_glicko_rating'].getRating(),
         a_player_glickos['tie_break_glicko_rating'].getRating(),
         b_player_glickos['tie_break_glicko_rating'].getRating(),
-        a_player_glickos['tie_break_glicko_rating'].get_pre_rating_rd(date),
-        b_player_glickos['tie_break_glicko_rating'].get_pre_rating_rd(date),
+        a_player_glickos['tie_break_glicko_rating'].getRd(),
+        b_player_glickos['tie_break_glicko_rating'].getRd(),
         
         a_player_glickos['ace_glicko_rating'].getRating() - b_player_glickos['return_ace_glicko_rating'].getRating(),
         a_player_glickos['ace_glicko_rating'].getRating(),
         b_player_glickos['return_ace_glicko_rating'].getRating(),
-        a_player_glickos['ace_glicko_rating'].get_pre_rating_rd(date),
-        b_player_glickos['return_ace_glicko_rating'].get_pre_rating_rd(date),
+        a_player_glickos['ace_glicko_rating'].getRd(),
+        b_player_glickos['return_ace_glicko_rating'].getRd(),
         
         a_player_glickos['return_ace_glicko_rating'].getRating() - b_player_glickos['ace_glicko_rating'].getRating(),
         a_player_glickos['return_ace_glicko_rating'].getRating(),
         b_player_glickos['ace_glicko_rating'].getRating(),
-        a_player_glickos['return_ace_glicko_rating'].get_pre_rating_rd(date),
-        b_player_glickos['ace_glicko_rating'].get_pre_rating_rd(date),
+        a_player_glickos['return_ace_glicko_rating'].getRd(),
+        b_player_glickos['ace_glicko_rating'].getRd(),
 
         a_player_glickos['first_won_glicko_rating'].getRating() - b_player_glickos['return_first_won_glicko_rating'].getRating(),
         a_player_glickos['first_won_glicko_rating'].getRating(),
         b_player_glickos['return_first_won_glicko_rating'].getRating(),
-        a_player_glickos['first_won_glicko_rating'].get_pre_rating_rd(date),
-        b_player_glickos['return_first_won_glicko_rating'].get_pre_rating_rd(date),
+        a_player_glickos['first_won_glicko_rating'].getRd(),
+        b_player_glickos['return_first_won_glicko_rating'].getRd(),
         
         a_player_glickos['return_first_won_glicko_rating'].getRating() - b_player_glickos['first_won_glicko_rating'].getRating(),
         a_player_glickos['return_first_won_glicko_rating'].getRating(),
         b_player_glickos['first_won_glicko_rating'].getRating(),
-        a_player_glickos['return_first_won_glicko_rating'].get_pre_rating_rd(date),
-        b_player_glickos['first_won_glicko_rating'].get_pre_rating_rd(date),
+        a_player_glickos['return_first_won_glicko_rating'].getRd(),
+        b_player_glickos['first_won_glicko_rating'].getRd(),
 
         a_player_glickos['second_won_glicko_rating'].getRating() - b_player_glickos['return_second_won_glicko_rating'].getRating(),
         a_player_glickos['second_won_glicko_rating'].getRating(),
         b_player_glickos['return_second_won_glicko_rating'].getRating(),
-        a_player_glickos['second_won_glicko_rating'].get_pre_rating_rd(date),
-        b_player_glickos['return_second_won_glicko_rating'].get_pre_rating_rd(date),
+        a_player_glickos['second_won_glicko_rating'].getRd(),
+        b_player_glickos['return_second_won_glicko_rating'].getRd(),
         
         a_player_glickos['return_second_won_glicko_rating'].getRating() - b_player_glickos['second_won_glicko_rating'].getRating(),
         a_player_glickos['return_second_won_glicko_rating'].getRating(),
         b_player_glickos['second_won_glicko_rating'].getRating(),
-        a_player_glickos['return_second_won_glicko_rating'].get_pre_rating_rd(date),
-        b_player_glickos['second_won_glicko_rating'].get_pre_rating_rd(date),
+        a_player_glickos['return_second_won_glicko_rating'].getRd(),
+        b_player_glickos['second_won_glicko_rating'].getRd(),
 
         # Surface-specific Glicko ratings        
         a_surface_glickos['glicko_rating'].getRating() - b_surface_glickos['glicko_rating'].getRating(),
         a_surface_glickos['glicko_rating'].getRating(),
         b_surface_glickos['glicko_rating'].getRating(),
-        a_surface_glickos['glicko_rating'].get_pre_rating_rd(date),
-        b_surface_glickos['glicko_rating'].get_pre_rating_rd(date),
+        a_surface_glickos['glicko_rating'].getRd(),
+        b_surface_glickos['glicko_rating'].getRd(),
 
         a_surface_glickos['point_glicko_rating'].getRating() - b_surface_glickos['point_glicko_rating'].getRating(),
         a_surface_glickos['point_glicko_rating'].getRating(),
         b_surface_glickos['point_glicko_rating'].getRating(),
-        a_surface_glickos['point_glicko_rating'].get_pre_rating_rd(date),
-        b_surface_glickos['point_glicko_rating'].get_pre_rating_rd(date),
+        a_surface_glickos['point_glicko_rating'].getRd(),
+        b_surface_glickos['point_glicko_rating'].getRd(),
 
         a_surface_glickos['game_glicko_rating'].getRating() - b_surface_glickos['game_glicko_rating'].getRating(),
         a_surface_glickos['game_glicko_rating'].getRating(),
         b_surface_glickos['game_glicko_rating'].getRating(),
-        a_surface_glickos['game_glicko_rating'].get_pre_rating_rd(date),
-        b_surface_glickos['game_glicko_rating'].get_pre_rating_rd(date),
+        a_surface_glickos['game_glicko_rating'].getRd(),
+        b_surface_glickos['game_glicko_rating'].getRd(),
 
         a_surface_glickos['set_glicko_rating'].getRating() - b_surface_glickos['set_glicko_rating'].getRating(),
         a_surface_glickos['set_glicko_rating'].getRating(),
         b_surface_glickos['set_glicko_rating'].getRating(),
-        a_surface_glickos['set_glicko_rating'].get_pre_rating_rd(date),
-        b_surface_glickos['set_glicko_rating'].get_pre_rating_rd(date),
+        a_surface_glickos['set_glicko_rating'].getRd(),
+        b_surface_glickos['set_glicko_rating'].getRd(),
         
         a_surface_glickos['service_game_glicko_rating'].getRating() - b_surface_glickos['return_game_glicko_rating'].getRating(),
         a_surface_glickos['service_game_glicko_rating'].getRating(),
         b_surface_glickos['return_game_glicko_rating'].getRating(),
-        a_surface_glickos['service_game_glicko_rating'].get_pre_rating_rd(date),
-        b_surface_glickos['return_game_glicko_rating'].get_pre_rating_rd(date),
+        a_surface_glickos['service_game_glicko_rating'].getRd(),
+        b_surface_glickos['return_game_glicko_rating'].getRd(),
         
         a_surface_glickos['return_game_glicko_rating'].getRating() - b_surface_glickos['service_game_glicko_rating'].getRating(),
         a_surface_glickos['return_game_glicko_rating'].getRating(),
         b_surface_glickos['service_game_glicko_rating'].getRating(),
-        a_surface_glickos['return_game_glicko_rating'].get_pre_rating_rd(date),
-        b_surface_glickos['service_game_glicko_rating'].get_pre_rating_rd(date),
+        a_surface_glickos['return_game_glicko_rating'].getRd(),
+        b_surface_glickos['service_game_glicko_rating'].getRd(),
 
         a_surface_glickos['tie_break_glicko_rating'].getRating() - b_surface_glickos['tie_break_glicko_rating'].getRating(),
         a_surface_glickos['tie_break_glicko_rating'].getRating(),
         b_surface_glickos['tie_break_glicko_rating'].getRating(),
-        a_surface_glickos['tie_break_glicko_rating'].get_pre_rating_rd(date),
-        b_surface_glickos['tie_break_glicko_rating'].get_pre_rating_rd(date),
+        a_surface_glickos['tie_break_glicko_rating'].getRd(),
+        b_surface_glickos['tie_break_glicko_rating'].getRd(),
         
         a_surface_glickos['ace_glicko_rating'].getRating() - b_surface_glickos['return_ace_glicko_rating'].getRating(),
         a_surface_glickos['ace_glicko_rating'].getRating(),
         b_surface_glickos['return_ace_glicko_rating'].getRating(),
-        a_surface_glickos['ace_glicko_rating'].get_pre_rating_rd(date),
-        b_surface_glickos['return_ace_glicko_rating'].get_pre_rating_rd(date),
+        a_surface_glickos['ace_glicko_rating'].getRd(),
+        b_surface_glickos['return_ace_glicko_rating'].getRd(),
         
         a_surface_glickos['return_ace_glicko_rating'].getRating() - b_surface_glickos['ace_glicko_rating'].getRating(),
         a_surface_glickos['return_ace_glicko_rating'].getRating(),
         b_surface_glickos['ace_glicko_rating'].getRating(),
-        a_surface_glickos['return_ace_glicko_rating'].get_pre_rating_rd(date),
-        b_surface_glickos['ace_glicko_rating'].get_pre_rating_rd(date),
+        a_surface_glickos['return_ace_glicko_rating'].getRd(),
+        b_surface_glickos['ace_glicko_rating'].getRd(),
 
         a_surface_glickos['first_won_glicko_rating'].getRating() - b_surface_glickos['return_first_won_glicko_rating'].getRating(),
         a_surface_glickos['first_won_glicko_rating'].getRating(),
         b_surface_glickos['return_first_won_glicko_rating'].getRating(),
-        a_surface_glickos['first_won_glicko_rating'].get_pre_rating_rd(date),
-        b_surface_glickos['return_first_won_glicko_rating'].get_pre_rating_rd(date),
+        a_surface_glickos['first_won_glicko_rating'].getRd(),
+        b_surface_glickos['return_first_won_glicko_rating'].getRd(),
         
         a_surface_glickos['return_first_won_glicko_rating'].getRating() - b_surface_glickos['first_won_glicko_rating'].getRating(),
         a_surface_glickos['return_first_won_glicko_rating'].getRating(),
         b_surface_glickos['first_won_glicko_rating'].getRating(),
-        a_surface_glickos['return_first_won_glicko_rating'].get_pre_rating_rd(date),
-        b_surface_glickos['first_won_glicko_rating'].get_pre_rating_rd(date),
+        a_surface_glickos['return_first_won_glicko_rating'].getRd(),
+        b_surface_glickos['first_won_glicko_rating'].getRd(),
 
         a_surface_glickos['second_won_glicko_rating'].getRating() - b_surface_glickos['return_second_won_glicko_rating'].getRating(),
         a_surface_glickos['second_won_glicko_rating'].getRating(),
         b_surface_glickos['return_second_won_glicko_rating'].getRating(),
-        a_surface_glickos['second_won_glicko_rating'].get_pre_rating_rd(date),
-        b_surface_glickos['return_second_won_glicko_rating'].get_pre_rating_rd(date),
+        a_surface_glickos['second_won_glicko_rating'].getRd(),
+        b_surface_glickos['return_second_won_glicko_rating'].getRd(),
         
         a_surface_glickos['return_second_won_glicko_rating'].getRating() - b_surface_glickos['second_won_glicko_rating'].getRating(),
         a_surface_glickos['return_second_won_glicko_rating'].getRating(),
         b_surface_glickos['second_won_glicko_rating'].getRating(),
-        a_surface_glickos['return_second_won_glicko_rating'].get_pre_rating_rd(date),
-        b_surface_glickos['second_won_glicko_rating'].get_pre_rating_rd(date),
+        a_surface_glickos['return_second_won_glicko_rating'].getRd(),
+        b_surface_glickos['second_won_glicko_rating'].getRd(),
 
         total_sets,
         total_games,

@@ -11,8 +11,8 @@ def send_discord_embed(char):
     if char == 'm':
         gender = "men"
         name = "ATP"
-        icon = "https://i0.wp.com/passingshot.productions/wp-content/uploads/2023/12/vecteezy_atp-tour-logo-symbol-tournament-open-men-tennis-association_23154125.jpg?resize=1200%2C1200&ssl=1"
-        color = 2403043
+        icon = "https://tennispredictionmodel.onrender.com/images/AtpTourLogoNew.jpg"
+        color = 2468578
     else:
         gender = "women"
         name = "WTA"
@@ -27,20 +27,22 @@ def send_discord_embed(char):
         "description": (
             "**August 15th, 2024** \n"
             f"Todays {gender}s betting slate for further [information click here](<https://discordapp.com/channels/1273303003943932038/1273405553116188744>)\n\n"
-            f"**Player A** - *{name} 2.* vs. **Player B** - *{name} 5.*\n"
-            "[Details](<https://www.sofascore.com/tennis/match/kostyuk-swiatek/xpQbsgbRb#id:12652642>) | **Start:** 1:30 PM EST | **Surface:** Grass | **Event:** Wimbledon\n"
-            "**Win:** [Player A](<https://www.sofascore.com/team/tennis/swiatek-iga/228272>) | **Prob.:** 62% | **Odds:** +110 / 47.6% | **Edge:** 14.4% | **Kelly:** .275\n"
-            "**Games:** Over 22.5 | **Prob.:** 62% | **Odds:** +110 / 47.6% | **Edge:** 14.4% | **Kelly:** .275\n\n"
-            f"**Player A** - *{name} 2.* vs. **Player B** - *{name} 5.*\n"
-            "[Details](<https://www.sofascore.com/tennis/match/kostyuk-swiatek/xpQbsgbRb#id:12652642>) | **Start:** 1:30 PM EST | **Surface:** Grass | **Event:** Wimbledon\n"
-            "**Win:** [Player A](<https://www.sofascore.com/team/tennis/swiatek-iga/228272>) | **Prob.:** 62% | **Odds:** +110 / 47.6% | **Edge:** 14.4% | **Kelly:** .275\n"
-            "**Games:** Over 22.5 | **Prob.:** 62% | **Odds:** +110 / 47.6% | **Edge:** 14.4% | **Kelly:** .275\n\n"
-            f"**Player A** - *{name} 2.* vs. **Player B** - *{name} 5.*\n"
-            "[Details](<https://www.sofascore.com/tennis/match/kostyuk-swiatek/xpQbsgbRb#id:12652642>) | **Start:** 1:30 PM EST | **Surface:** Grass | **Event:** Wimbledon\n"
-            "**Win:** [Player A](<https://www.sofascore.com/team/tennis/swiatek-iga/228272>) | **Prob.:** 62% | **Odds:** +110 / 47.6% | **Edge:** 14.4% | **Kelly:** .275\n"
-            "**Games:** Over 22.5 | **Prob.:** 62% | **Odds:** +110 / 47.6% | **Edge:** 14.4% | **Kelly:** .275"
+            f"**[Player A](<https://www.sofascore.com/team/tennis/swiatek-iga/228272>)** - *{name} 2* vs. **[Player B](<https://www.sofascore.com/team/tennis/kostyuk-marta/230056>)** - *{name} 5* | **[Match Details](<https://www.sofascore.com/tennis/match/kostyuk-swiatek/xpQbsgbRb#id:12652642>)**\n"
+            "**Start:** 1:30 PM EST | **Surface:** Grass | **Event:** Wimbledon\n"
+            "**ML:** **[Player A](<https://www.sofascore.com/team/tennis/swiatek-iga/228272>)** | **Prob.:** 62% | **Odds:** +110 / 47.6% | **Edge:** 14.4% | **Kelly:** .275\n"
+            "**O/U Gs:** Over 22.5 | **Prob.:** 62% | **Odds:** +110 / 47.6% | **Edge:** 14.4% | **Kelly:** .275\n\n"
+            
+            f"**[Player A](<https://www.sofascore.com/team/tennis/swiatek-iga/228272>)** - *{name} 2* vs. **[Player B](<https://www.sofascore.com/team/tennis/kostyuk-marta/230056>)** - *{name} 5* | **[Match Details](<https://www.sofascore.com/tennis/match/kostyuk-swiatek/xpQbsgbRb#id:12652642>)**\n"
+            "**Start:** 1:30 PM EST | **Surface:** Grass | **Event:** Wimbledon\n"
+            "**ML:** **[Player A](<https://www.sofascore.com/team/tennis/swiatek-iga/228272>)** | **Prob.:** 62% | **Odds:** +110 / 47.6% | **Edge:** 14.4% | **Kelly:** .275\n"
+            "**O/U Gs:** Over 22.5 | **Prob.:** 62% | **Odds:** +110 / 47.6% | **Edge:** 14.4% | **Kelly:** .275\n\n"
+            
+            f"**[Player A](<https://www.sofascore.com/team/tennis/swiatek-iga/228272>)** - *{name} 2* vs. **[Player B](<https://www.sofascore.com/team/tennis/kostyuk-marta/230056>)** - *{name} 5* | **[Match Details](<https://www.sofascore.com/tennis/match/kostyuk-swiatek/xpQbsgbRb#id:12652642>)**\n"
+            "**Start:** 1:30 PM EST | **Surface:** Grass | **Event:** Wimbledon\n"
+            "**ML:** **[Player A](<https://www.sofascore.com/team/tennis/swiatek-iga/228272>)** | **Prob.:** 62% | **Odds:** +110 / 47.6% | **Edge:** 14.4% | **Kelly:** .275\n"
+            "**O/U Gs:** Over 22.5 | **Prob.:** 62% | **Odds:** +110 / 47.6% | **Edge:** 14.4% | **Kelly:** .275"
         ),
-        "color": color  # 2403043 is ATP, 7873532 is WTA
+        "color": color  # 2468578 is ATP, 7873532 is WTA
     }
 
     collapsible = {

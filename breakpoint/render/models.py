@@ -59,7 +59,9 @@ class MensTennisMatch(models.Model):
     l_bpSaved = models.IntegerField(null=True, blank=True)
     l_bpFaced = models.IntegerField(null=True, blank=True)
     winner_rank = models.IntegerField(null=True, blank=True)
+    winner_rank_points = models.IntegerField(null=True, blank=True)
     loser_rank = models.IntegerField(null=True, blank=True)
+    loser_rank_points = models.IntegerField(null=True, blank=True)
 
 class WomensTennisMatch(models.Model):
     tourney_id = models.CharField(max_length=50)
@@ -119,7 +121,9 @@ class WomensTennisMatch(models.Model):
     l_bpSaved = models.IntegerField(null=True, blank=True)
     l_bpFaced = models.IntegerField(null=True, blank=True)
     winner_rank = models.IntegerField(null=True, blank=True)
+    winner_rank_points = models.IntegerField(null=True, blank=True)
     loser_rank = models.IntegerField(null=True, blank=True)
+    loser_rank_points = models.IntegerField(null=True, blank=True)
 
 class MensPlayer(models.Model):
     #player_id,name_first,name_last,hand,dob,ioc,height,wikidata_id

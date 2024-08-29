@@ -162,7 +162,9 @@ class Command(BaseCommand):
             'l_bpSaved': 'l_bpSaved',
             'l_bpFaced': 'l_bpFaced',
             'winner_rank': 'winner_rank',
-            'loser_rank': 'loser_rank'
+            'winner_rank_points': 'winner_rank_points',
+            'loser_rank': 'loser_rank',
+            'loser_rank_points': 'loser_rank_points'
         }
 
         default_values = {
