@@ -6,7 +6,7 @@ from dateutil.relativedelta import relativedelta
 START_RATING = 1500
 RATING_SCALE = 173.7178  # Scaling factor to convert Glicko-2 rating to traditional rating scale
 RD_START = 350
-TAU = .75  # System constant
+TAU = .6  # System constant
 RATING_VOL = 0.06
 EPSILON = 0.000001
 RATING_PERIOD = 40  # Days

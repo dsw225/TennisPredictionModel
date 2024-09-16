@@ -7,6 +7,7 @@ import random
 import traceback
 import numpy as np
 from render.utils.glicko2.glicko2_updater import *
+from render.utils.glicko2.glicko2 import *
 import arff
 import copy
 
@@ -314,7 +315,7 @@ async def prior_games(df: pd.DataFrame, enddate: datetime.date):
 
     pbar.close()
 
-    new_format.to_csv('testcsvs/glickoUpdatedTest.csv', index=False)
+    new_format.to_csv(f'testcsvs/glickoTempTau{TAU*10}.csv', index=False)
 
     return new_format
 

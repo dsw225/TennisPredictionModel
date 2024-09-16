@@ -99,24 +99,39 @@ def return_serve_glicko(rAservice: Rating, rBservice: Rating, rAreturn: Rating, 
     date = row['tourney_date']
     surface = row['surface']
 
-    playerA_serveRating = serve_rating(row['w_bpFaced'], row['w_bpSaved'], row['w_SvGms'])
-    playerB_serveRating = serve_rating(row['l_bpFaced'], row['l_bpSaved'], row['l_SvGms'])
+    #Newer
+    w_return_points = row['l_svpt'] - row['l_1stWon'] - row['l_2ndWon']
+    l_return_points = row['w_svpt'] - row['w_1stWon'] - row['w_2ndWon']
+    w_serve_points = row['w_1stWon'] + row['w_2ndWon']
+    l_serve_points = row['l_1stWon'] + row['l_2ndWon']
+    # w_points = w_serve_points + w_return_points
+    # l_points = l_serve_points + l_return_points
 
-    playerA_returnRating = 100 - playerB_serveRating
-    playerB_returnRating = 100 - playerA_serveRating
-
-    ratio = return_to_serve_ratio(surface)
-
-    # delta_aServe = delta_rating(rAservice, rBreturn)
-    # delta_bReturn = 1 - delta_aServe
-    new_delta_aServe = (playerA_serveRating/(playerA_serveRating + playerB_returnRating * ratio)) - (playerB_returnRating * ratio/(playerA_serveRating + playerB_returnRating * ratio))
-
-    # delta_bServe = delta_rating(rBservice, rAreturn)
-    # delta_aReturn = 1 - delta_bServe
-    new_delta_bServe = (playerB_serveRating/(playerB_serveRating + playerA_returnRating * ratio)) - (playerA_returnRating * ratio/(playerB_serveRating + playerA_returnRating * ratio))
+    new_delta_aServe = w_return_points/(w_serve_points + l_return_points)
+    new_delta_bServe = l_return_points/(l_serve_points + w_return_points)
 
     rAserviceNew, rBreturnNew = new_rating_glicko2(rAservice, rBreturn, new_delta_aServe, date)
     rBserviceNew, rAreturnNew = new_rating_glicko2(rBservice, rAreturn, new_delta_bServe, date)
+
+    #Older
+    # playerA_serveRating = serve_rating(row['w_bpFaced'], row['w_bpSaved'], row['w_SvGms'])
+    # playerB_serveRating = serve_rating(row['l_bpFaced'], row['l_bpSaved'], row['l_SvGms'])
+
+    # playerA_returnRating = 100 - playerB_serveRating
+    # playerB_returnRating = 100 - playerA_serveRating
+
+    # ratio = return_to_serve_ratio(surface)
+
+    # # delta_aServe = delta_rating(rAservice, rBreturn)
+    # # delta_bReturn = 1 - delta_aServe
+    # new_delta_aServe = (playerA_serveRating/(playerA_serveRating + playerB_returnRating * ratio)) - (playerB_returnRating * ratio/(playerA_serveRating + playerB_returnRating * ratio))
+
+    # # delta_bServe = delta_rating(rBservice, rAreturn)
+    # # delta_aReturn = 1 - delta_bServe
+    # new_delta_bServe = (playerB_serveRating/(playerB_serveRating + playerA_returnRating * ratio)) - (playerA_returnRating * ratio/(playerB_serveRating + playerA_returnRating * ratio))
+
+    # rAserviceNew, rBreturnNew = new_rating_glicko2(rAservice, rBreturn, new_delta_aServe, date)
+    # rBserviceNew, rAreturnNew = new_rating_glicko2(rBservice, rAreturn, new_delta_bServe, date)
 
     return rAserviceNew, rBserviceNew, rAreturnNew, rBreturnNew
 
