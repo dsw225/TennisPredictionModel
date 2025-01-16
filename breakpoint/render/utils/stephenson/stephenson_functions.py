@@ -2,7 +2,8 @@ from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 import pandas as pd
 import numpy as np
-from render.utils.glicko2.glicko2 import *
+import copy
+from render.utils.stephenson.stephenson import *
 
 DELTA_RATING_CAP = 200.0
 MIN_MATCHES = 5
@@ -44,12 +45,12 @@ def get_score_stats(row):
 
     return w_games, l_games, w_sets, l_sets, tie_breaks_won_winner, tie_breaks_won_loser, tie_breaks_played
 
-def primary_glicko(rA: Rating, rB: Rating, row):
+def primary_steph(rA: Stephenson, rB: Stephenson, row):
     date = row['tourney_date']
-    rA_new, rB_new = new_rating_glicko2(rA, rB, 1, date)
+    rA_new, rB_new = new_rating_steph(rA, rB, 1, date)
     return rA_new, rB_new
 
-def points_sets_games_glicko(rAset: Rating, rBset: Rating, rAgame: Rating, rBgame: Rating, rApoint: Rating, rBpoint: Rating, row, w_sets, l_sets, w_games, l_games):
+def points_sets_games_steph(rAset: Stephenson, rBset: Stephenson, rAgame: Stephenson, rBgame: Stephenson, rApoint: Stephenson, rBpoint: Stephenson, row, w_sets, l_sets, w_games, l_games):
     # wDeltaPoint = delta_rating(rApoint, rBpoint)
     # lDeltaPoint = 1 - wDeltaPoint
     # wDeltaSet = delta_rating(rAset, rBset)
@@ -69,29 +70,29 @@ def points_sets_games_glicko(rAset: Rating, rBset: Rating, rAgame: Rating, rBgam
     deltaSetNew = w_sets/(w_sets+l_sets) if w_sets+w_sets > 0 else 0
     deltaGameNew = w_games/(w_games+l_games) if w_sets+l_sets > 0 else 0
 
-    rApointNew, rBpointNew = new_rating_glicko2(rApoint, rBpoint, deltaPointNew, date)
-    rAsetNew, rBsetNew = new_rating_glicko2(rAset, rBset, deltaSetNew, date)
-    rAgameNew, rBgameNew = new_rating_glicko2(rAgame, rBgame, deltaGameNew, date)
+    rApointNew, rBpointNew = new_rating_steph(rApoint, rBpoint, deltaPointNew, date)
+    rAsetNew, rBsetNew = new_rating_steph(rAset, rBset, deltaSetNew, date)
+    rAgameNew, rBgameNew = new_rating_steph(rAgame, rBgame, deltaGameNew, date)
 
     return rApointNew, rBpointNew, rAsetNew, rBsetNew, rAgameNew, rBgameNew
 
-def tb_glicko(rAtb: Rating, rBtb: Rating, tie_breaks_won_winner, tie_breaks_played, date):
+def tb_steph(rAtb: Stephenson, rBtb: Stephenson, tie_breaks_won_winner, tie_breaks_played, date):
     tb_winner = tie_breaks_won_winner / tie_breaks_played if tie_breaks_played > 0 else 0
 
     rAtbNew, rBtbNew = rAtb, rBtb
 
     if tie_breaks_played > 0:
-        rAtbNew, rBtbNew = new_rating_glicko2(rAtb, rBtb, tb_winner, date)
+        rAtbNew, rBtbNew = new_rating_steph(rAtb, rBtb, tb_winner, date)
 
     return rAtbNew, rBtbNew
 
-def bp_glicko(rAtb: Rating, rBtb: Rating, bp_won_winner, bp_played, date):
+def bp_steph(rAtb: Stephenson, rBtb: Stephenson, bp_won_winner, bp_played, date):
     tb_winner = bp_won_winner / bp_played if bp_played > 0 else 0
 
     rAtbNew, rBtbNew = rAtb, rBtb
 
     if bp_played > 0:
-        rAtbNew, rBtbNew = new_rating_glicko2(rAtb, rBtb, tb_winner, date)
+        rAtbNew, rBtbNew = new_rating_steph(rAtb, rBtb, tb_winner, date)
 
     return rAtbNew, rBtbNew
 
@@ -101,7 +102,7 @@ total_hard = 0
 num_clay = 0
 num_grass = 0
 num_hard = 0
-def return_serve_glicko(rAservice: Rating, rBservice: Rating, rAreturn: Rating, rBreturn: Rating, row):
+def return_serve_steph(rAservice: Stephenson, rBservice: Stephenson, rAreturn: Stephenson, rBreturn: Stephenson, row):
     global total_clay
     global total_grass
     global total_hard
@@ -141,34 +142,34 @@ def return_serve_glicko(rAservice: Rating, rBservice: Rating, rAreturn: Rating, 
 
     # print(f"Percent 1st Won Clay: {total_clay/num_clay} Grass: {total_grass/num_grass} Hard: {total_hard/num_hard}")
 
-    rAserviceNew, rBreturnNew = new_rating_glicko2(rAservice, rBreturn, new_delta_aServe, date)
-    rBserviceNew, rAreturnNew = new_rating_glicko2(rBservice, rAreturn, new_delta_bServe, date)
+    rAserviceNew, rBreturnNew = new_rating_steph(rAservice, rBreturn, new_delta_aServe, date)
+    rBserviceNew, rAreturnNew = new_rating_steph(rBservice, rAreturn, new_delta_bServe, date)
 
     #Older
-    # playerA_serveRating = serve_rating(row['w_bpFaced'], row['w_bpSaved'], row['w_SvGms'])
-    # playerB_serveRating = serve_rating(row['l_bpFaced'], row['l_bpSaved'], row['l_SvGms'])
+    # playerA_serveStephenson = serve_rating(row['w_bpFaced'], row['w_bpSaved'], row['w_SvGms'])
+    # playerB_serveStephenson = serve_rating(row['l_bpFaced'], row['l_bpSaved'], row['l_SvGms'])
 
-    # playerA_returnRating = 100 - playerB_serveRating
-    # playerB_returnRating = 100 - playerA_serveRating
+    # playerA_returnStephenson = 100 - playerB_serveStephenson
+    # playerB_returnStephenson = 100 - playerA_serveStephenson
 
     # ratio = return_to_serve_ratio(surface)
 
     # # delta_aServe = delta_rating(rAservice, rBreturn)
     # # delta_bReturn = 1 - delta_aServe
-    # new_delta_aServe = (playerA_serveRating/(playerA_serveRating + playerB_returnRating * ratio)) - (playerB_returnRating * ratio/(playerA_serveRating + playerB_returnRating * ratio))
+    # new_delta_aServe = (playerA_serveStephenson/(playerA_serveStephenson + playerB_returnStephenson * ratio)) - (playerB_returnStephenson * ratio/(playerA_serveStephenson + playerB_returnStephenson * ratio))
 
     # # delta_bServe = delta_rating(rBservice, rAreturn)
     # # delta_aReturn = 1 - delta_bServe
-    # new_delta_bServe = (playerB_serveRating/(playerB_serveRating + playerA_returnRating * ratio)) - (playerA_returnRating * ratio/(playerB_serveRating + playerA_returnRating * ratio))
+    # new_delta_bServe = (playerB_serveStephenson/(playerB_serveStephenson + playerA_returnStephenson * ratio)) - (playerA_returnStephenson * ratio/(playerB_serveStephenson + playerA_returnStephenson * ratio))
 
-    # rAserviceNew, rBreturnNew = new_rating_glicko2(rAservice, rBreturn, new_delta_aServe, date)
-    # rBserviceNew, rAreturnNew = new_rating_glicko2(rBservice, rAreturn, new_delta_bServe, date)
+    # rAserviceNew, rBreturnNew = new_rating_steph(rAservice, rBreturn, new_delta_aServe, date)
+    # rBserviceNew, rAreturnNew = new_rating_steph(rBservice, rAreturn, new_delta_bServe, date)
 
     return rAserviceNew, rBserviceNew, rAreturnNew, rBreturnNew
 
 
 
-def ace_glicko(rAace: Rating, rBace: Rating, rAaceReturn: Rating, rBaceReturn: Rating, row):
+def ace_steph(rAace: Stephenson, rBace: Stephenson, rAaceReturn: Stephenson, rBaceReturn: Stephenson, row):
     date = row['tourney_date']
     surface = row['surface']
 
@@ -183,9 +184,9 @@ def ace_glicko(rAace: Rating, rBace: Rating, rAaceReturn: Rating, rBaceReturn: R
     wAcePct = (row['w_ace']/row['w_svpt']) * ratio
     lAcePct = (row['l_ace']/row['l_svpt']) * ratio
 
-    return base_competing_glicko(rAace, rBace, rAaceReturn, rBaceReturn, wAcePct, lAcePct, date)
+    return base_competing_steph(rAace, rBace, rAaceReturn, rBaceReturn, wAcePct, lAcePct, date)
 
-def first_won_glicko(rAfw: Rating, rBfw: Rating, rAvFw: Rating, rBvFw: Rating, row):
+def first_won_steph(rAfw: Stephenson, rBfw: Stephenson, rAvFw: Stephenson, rBvFw: Stephenson, row):
     date = row['tourney_date']
     surface = row['surface']
 
@@ -200,10 +201,10 @@ def first_won_glicko(rAfw: Rating, rBfw: Rating, rAvFw: Rating, rBvFw: Rating, r
     w1stIn = row['w_1stWon']/row['w_1stIn'] * ratio
     l1stIn = row['l_1stWon']/row['l_1stIn'] * ratio
 
-    return base_competing_glicko(rAfw, rBfw, rAvFw, rBvFw, w1stIn, l1stIn, date)
+    return base_competing_steph(rAfw, rBfw, rAvFw, rBvFw, w1stIn, l1stIn, date)
 
 
-def second_won_glicko(rAfw: Rating, rBfw: Rating, rAvFw: Rating, rBvFw: Rating, row):
+def second_won_steph(rAfw: Stephenson, rBfw: Stephenson, rAvFw: Stephenson, rBvFw: Stephenson, row):
     date = row['tourney_date']
     surface = row['surface']
 
@@ -230,24 +231,24 @@ def second_won_glicko(rAfw: Rating, rBfw: Rating, rAvFw: Rating, rBvFw: Rating, 
 
     # print(f"Percent 1st Won Clay: {total_clay/num_clay} Grass: {total_grass/num_grass} Hard: {total_hard/num_hard}")
 
-    return base_competing_glicko(rAfw, rBfw, rAvFw, rBvFw, w1stIn, l1stIn, date)
+    return base_competing_steph(rAfw, rBfw, rAvFw, rBvFw, w1stIn, l1stIn, date)
 
-def base_competing_glicko(rAfirst: Rating, rBfirst: Rating, rAsecond: Rating, rBsecond: Rating, aPct, bPct, date):
-    rAfirstNew, rBsecondNew = new_rating_glicko2(rAfirst, rBsecond, aPct, date)
-    rBfirstNew, rAsecondNew = new_rating_glicko2(rBfirst, rAsecond, bPct, date)
+def base_competing_steph(rAfirst: Stephenson, rBfirst: Stephenson, rAsecond: Stephenson, rBsecond: Stephenson, aPct, bPct, date):
+    rAfirstNew, rBsecondNew = new_rating_steph(rAfirst, rBsecond, aPct, date)
+    rBfirstNew, rAsecondNew = new_rating_steph(rBfirst, rAsecond, bPct, date)
 
     return rAfirstNew, rBfirstNew, rAsecondNew, rBsecondNew
 
-def new_rating_glicko2(ratingA: Rating, ratingB: Rating, outcome_list, date):
-    ratingB_list = ratingB.rating
-    rdB_list = ratingB.rd
-
-    ratingA_list = ratingA.rating
-    rdA_list = ratingA.rd
-
-    ratingA.update_player(ratingB_list, rdB_list, outcome_list, date)
-    ratingB.update_player(ratingA_list, rdA_list, 1 -  outcome_list, date)
+def new_rating_steph(ratingA: Stephenson, ratingB: Stephenson, outcome_list, date):
+    ratingA.updateVar(date)
+    ratingB.updateVar(date)
     
+    # So we don't evaluate on outcome
+    a_clone = copy.deepcopy(ratingA)
+
+    ratingA.newVarRating(ratingB, outcome_list, 0)
+    ratingB.newVarRating(a_clone, (1 - outcome_list), 0) 
+
     return ratingA, ratingB
 
 def return_to_serve_ratio(surface):

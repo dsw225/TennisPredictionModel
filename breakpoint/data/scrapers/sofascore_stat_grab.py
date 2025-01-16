@@ -67,7 +67,7 @@ async def get_year_to_date(mw):
     day_of_year = current_date.timetuple().tm_yday
     games_in_year = []
     try:
-        for day in range(1, day_of_year, 1):
+        for day in range(day_of_year-10, day_of_year, 1):
             # Calculate the date for each day in reverse order
             date = current_date - datetime.timedelta(days=day_of_year - day)
             matches = await get_stats(mw, date)
@@ -91,7 +91,7 @@ def save_data_to_csv(mw, data):
         'm': 'atp_matches_', 'w': 'wta_matches_', 'mc': 'atp_matches_qual_chall_', 'wc': 'wta_matches_qual_chall_', 'mi': 'itf_men_matches_', 'wi': 'itf_women_matches_'
     }
     prefix = prefix_mapping.get(mw, '')
-    filename = f'data/csvs/Generated/{prefix}{datetime.date.today().year}_Updated_NoUpload.csv'
+    filename = f'data/csvs/Generated/{prefix}{datetime.date.today().year}_Updated_NoUploadTest.csv'
     data.to_csv(filename, index=False)
     print(f"Data saved to {filename}")
 
