@@ -19,7 +19,7 @@ SORT = True # Sort table by rating - unneeded
 RDMAX = 350.0 # Max variance
 
 # RP is not in R, however this model of stephenson is not on a week by week basis
-RATING_PERIOD = 90 # 60.0  # Days # http://www.glicko.net/research/volleyball-FINAL.pdf
+RATING_PERIOD = 25 # 60.0  # Days # http://www.glicko.net/research/volleyball-FINAL.pdf
 Q = math.log(10) / 400
 
 class Stephenson(object):
@@ -58,11 +58,13 @@ class Stephenson(object):
     def updateVar(self, current_date=None):
         t = self.getTimeFactor(current_date)
         self.last_match = current_date if current_date is not None else self.last_match
-        self.sigma = min(math.sqrt(self.sigma + (self.cval * t)), self.rdmax) if t is not None else self.sigma
+        self.sigma = min(self.sigma + (self.cval * t), self.rdmax) if t is not None else self.sigma
+
 
     def updateGetVar(self, current_date=None):
         t = self.getTimeFactor(current_date)
-        sigma = min(math.sqrt(self.sigma + (self.cval * t)), self.rdmax) if t is not None else self.sigma
+        sigma = min(self.sigma + (self.cval * t), self.rdmax) if t is not None else self.sigma
+
         return math.sqrt(sigma)
 
     def getKVal(self, opponent_rating):

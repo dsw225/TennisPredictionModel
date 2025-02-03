@@ -320,7 +320,7 @@ async def prior_games(df: pd.DataFrame, enddate: datetime.date):
 
     pbar.close()
 
-    new_format.to_csv(f'testcsvs/StephNRP{RATING_PERIOD}.csv', index=False)
+    new_format.to_csv(f'testcsvs/StephFixRP{RATING_PERIOD}.csv', index=False)
 
     return new_format
 
