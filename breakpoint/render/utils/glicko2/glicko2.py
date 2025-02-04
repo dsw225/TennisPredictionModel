@@ -9,7 +9,7 @@ RD_START = 350
 TAU = .6  # System constant
 RATING_VOL = 0.06
 EPSILON = 0.000001
-RATING_PERIOD = 14  # Days
+RATING_PERIOD = 25  # Days
 START_DATE = datetime(1800, 1, 1).date()
 
 class Rating:
