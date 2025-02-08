@@ -1,9 +1,9 @@
 import csv
 import pandas as pd
-file_path = 'data/csvs/ATP (Mens)/Odds/2024.xlsx'
+file_path = 'data/csvs/ATP (Mens)/Odds/2023.xlsx'
 
 data = pd.read_excel(file_path)
-# data = data[data["Best of"] == 5.0].reset_index(drop=True)
+data = data[data["Best of"] == 5.0].reset_index(drop=True)
 
 
 vegasCorrect = 0
