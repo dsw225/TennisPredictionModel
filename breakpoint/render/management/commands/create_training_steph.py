@@ -7,7 +7,7 @@ from django.db import models
 import traceback
 from asgiref.sync import sync_to_async # type: ignore
 from render.utils.database_funcs import *
-import render.utils.stephenson.stephenson_compute_games as compute_games 
+import render.utils.Full_Steph.stephenson_compute_games as compute_games 
 
 # Setup Django environment
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'breakpoint.settings')

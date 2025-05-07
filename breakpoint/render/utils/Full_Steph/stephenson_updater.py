@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
-from render.utils.stephenson.stephenson_functions import *
+from render.utils.Full_Steph.stephenson_functions import *
 import warnings
 import traceback
 
@@ -28,7 +28,7 @@ async def update_stephs(players_steph : pd.DataFrame, row):
         idxA = player_a.index[0]
         idxB = player_b.index[0]
         
-        w_games, l_games, w_sets, l_sets, tie_breaks_won_winner, tie_breaks_won_loser, tie_breaks_played = get_score_stats(row)
+        w_games, l_games, w_sets, l_sets, tie_breaks_won_winner, tie_breaks_won_loser, tie_breaks_played, _, _ = get_score_stats(row)
 
         #Primary update
         match_date = row['tourney_date']
@@ -227,7 +227,7 @@ async def process_player_matches(player, recent_matches: pd.DataFrame, game):
             update_steph_ratings(result, row, surface, update_latest=False, is_winner=False)
 
     def update_steph_ratings(result, row, surface, update_latest, is_winner=True):
-        w_games, l_games, w_sets, l_sets, tie_breaks_won_winner, tie_breaks_won_loser, tie_breaks_played = get_score_stats(row)
+        w_games, l_games, w_sets, l_sets, tie_breaks_won_winner, tie_breaks_won_loser, tie_breaks_played, _, _ = get_score_stats(row)
         if not isinstance(row, pd.Series):
             raise TypeError(f"Expected pandas Series but got {type(row)}")
         prefix = "recent_"

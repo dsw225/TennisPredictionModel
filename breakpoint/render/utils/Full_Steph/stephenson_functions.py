@@ -3,7 +3,7 @@ from dateutil.relativedelta import relativedelta
 import pandas as pd
 import numpy as np
 import copy
-from render.utils.stephenson.stephenson import *
+from render.utils.Full_Steph.stephenson import *
 
 DELTA_RATING_CAP = 200.0
 MIN_MATCHES = 5
@@ -28,6 +28,13 @@ def get_score_stats(row):
     w_sets, l_sets = 0, 0
     tie_breaks_won_winner, tie_breaks_won_loser = 0, 0
 
+    w_return_points = row['l_svpt'] - row['l_1stWon'] - row['l_2ndWon']
+    l_return_points = row['w_svpt'] - row['w_1stWon'] - row['w_2ndWon']
+    w_serve_points = row['w_1stWon'] + row['w_2ndWon']
+    l_serve_points = row['l_1stWon'] + row['l_2ndWon']
+    w_points = w_serve_points + w_return_points
+    l_points = l_serve_points + l_return_points
+
     for i in range(1, sets + 1):
         if not np.isnan(row[f"w{i}"]) and not np.isnan(row[f"l{i}"]):
             if row[f"w{i}"] == 7 and row[f"l{i}"] == 6:
@@ -43,7 +50,7 @@ def get_score_stats(row):
 
     tie_breaks_played = tie_breaks_won_winner + tie_breaks_won_loser
 
-    return w_games, l_games, w_sets, l_sets, tie_breaks_won_winner, tie_breaks_won_loser, tie_breaks_played
+    return w_games, l_games, w_sets, l_sets, tie_breaks_won_winner, tie_breaks_won_loser, tie_breaks_played, w_points, l_points
 
 def primary_steph(rA: Stephenson, rB: Stephenson, row):
     date = row['tourney_date']

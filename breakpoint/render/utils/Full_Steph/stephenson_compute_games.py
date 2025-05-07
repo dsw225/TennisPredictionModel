@@ -6,8 +6,8 @@ from math import pow, copysign, floor, ceil
 import random
 import traceback
 import numpy as np
-from render.utils.stephenson.stephenson_updater import *
-from render.utils.stephenson.stephenson import *
+from render.utils.Full_Steph.stephenson_updater import *
+from render.utils.Full_Steph.stephenson import *
 import arff
 import copy
 
@@ -87,6 +87,8 @@ async def prior_games(df: pd.DataFrame, enddate: datetime.date):
         'a_player_slug',
         'a_player_rank',
         'a_player_rank_points',
+
+        
         'b_player_id',
         'b_player_name',
         'b_player_age',
@@ -100,6 +102,43 @@ async def prior_games(df: pd.DataFrame, enddate: datetime.date):
         'rank_points_diff',
         'age_diff',
         'ht_diff',
+        # 'hand_adv',
+
+        # 'a_WL_recent',
+        # 'b_WL_recent',
+        # 'a_WL_last_form',
+        # 'b_WL_last_form',
+        # 'a_avg_ace',
+        # 'b_avg_ace',
+        # 'a_avg_ace_allowed',
+        # 'b_avg_ace_allowed',
+        # 'a_avg_df',
+        # 'b_avg_df',
+        # 'a_avg_df_forced',
+        # 'b_avg_df_forced',
+        # 'a_avg_bp_saved',
+        # 'b_avg_bp_saved',
+        # 'a_avg_bp_converted',
+        # 'b_avg_bp_converted',
+        # 'a_avg_svpt_won',
+        # 'b_avg_svpt_won',
+        # 'a_avg_svgms_won',
+        # 'b_avg_svgms_lost',
+        # 'a_avg_rtpt_won',
+        # 'b_avg_rtpt_won',
+        # 'a_avg_rtgms_won',
+        # 'b_avg_rtgms_lost',
+
+        # 'a_avg_pt_won',
+        # 'b_avg_pt_won',
+        # 'a_avg_gms_won',
+        # 'b_avg_gms_won',
+        # 'a_avg_sets_won',
+        # 'b_avg_sets_won',
+
+        # 'a_b_win_loss_ratio',
+        # 'a_win_vs_top25',
+        # 'a_win_vs_top50',
 
         'steph_rating_diff',
         'a_steph_rating',
@@ -116,76 +155,50 @@ async def prior_games(df: pd.DataFrame, enddate: datetime.date):
         'game_steph_rating_diff',
         'a_game_steph_rating',
         'b_game_steph_rating',
-        'a_game_steph_rd',
-        'b_game_steph_rd',
 
         'set_steph_rating_diff',
         'a_set_steph_rating',
         'b_set_steph_rating',
-        'a_set_steph_rd',
-        'b_set_steph_rd',
 
         'service_steph_rating_diff',
         'a_service_steph_rating',
         'b_return_steph_rating',
-        'a_service_steph_rd',
-        'b_return_steph_rd',
 
         'return_steph_rating_diff',
         'a_return_steph_rating',
         'b_service_steph_rating',
-        'a_return_steph_rd',
-        'b_service_steph_rd',
 
         'tiebreak_steph_rating_diff',
         'a_tiebreak_steph_rating',
         'b_tiebreak_steph_rating',
-        'a_tiebreak_steph_rd',
-        'b_tiebreak_steph_rd',
 
         'bp_steph_rating_diff',
         'a_bp_steph_rating',
         'b_bp_steph_rating',
-        'a_bp_steph_rd',
-        'b_bp_steph_rd',
 
         'ace_steph_rating_diff',
         'a_ace_steph_rating',
         'b_return_ace_steph_rating',
-        'a_ace_steph_rd',
-        'b_return_ace_steph_rd',
 
         'return_ace_steph_rating_diff',
         'a_return_ace_steph_rating',
         'b_ace_steph_rating',
-        'a_return_ace_steph_rd',
-        'b_ace_steph_rd',
 
         'first_won_steph_rating_diff',
         'a_first_won_steph_rating',
         'b_return_first_won_steph_rating',
-        'a_first_won_steph_rd',
-        'b_return_first_won_steph_rd',
 
         'return_first_won_steph_rating_diff',
         'a_return_first_won_steph_rating',
         'b_first_won_steph_rating',
-        'a_return_first_won_steph_rd',
-        'b_first_won_steph_rd',
 
         'second_won_steph_rating_diff',
         'a_second_won_steph_rating',
         'b_return_second_won_steph_rating',
-        'a_second_won_steph_rd',
-        'b_return_second_won_steph_rd',
 
         'return_second_won_steph_rating_diff',
         'a_return_second_won_steph_rating',
         'b_second_won_steph_rating',
-        'a_return_second_won_steph_rd',
-        'b_second_won_steph_rd',
-
-        
         
         'surface_steph_rating_diff',
         'a_surface_steph_rating',
@@ -202,74 +215,50 @@ async def prior_games(df: pd.DataFrame, enddate: datetime.date):
         'surface_game_steph_rating_diff',
         'a_surface_game_steph_rating',
         'b_surface_game_steph_rating',
-        'a_surface_game_steph_rd',
-        'b_surface_game_steph_rd',
 
         'surface_set_steph_rating_diff',
         'a_surface_set_steph_rating',
         'b_surface_set_steph_rating',
-        'a_surface_set_steph_rd',
-        'b_surface_set_steph_rd',
 
         'surface_service_steph_rating_diff',
         'a_surface_service_steph_rating',
         'b_surface_return_steph_rating',
-        'a_surface_service_steph_rd',
-        'b_surface_return_steph_rd',
 
         'surface_return_steph_rating_diff',
         'a_surface_return_steph_rating',
         'b_surface_service_steph_rating',
-        'a_surface_return_steph_rd',
-        'b_surface_service_steph_rd',
 
         'surface_tiebreak_steph_rating_diff',
         'a_surface_tiebreak_steph_rating',
         'b_surface_tiebreak_steph_rating',
-        'a_surface_tiebreak_steph_rd',
-        'b_surface_tiebreak_steph_rd',
 
         'surface_bp_steph_rating_diff',
         'a_surface_bp_steph_rating',
         'b_surface_bp_steph_rating',
-        'a_surface_bp_steph_rd',
-        'b_surface_bp_steph_rd',
 
         'surface_ace_steph_rating_diff',
         'a_surface_ace_steph_rating',
         'b_surface_return_ace_steph_rating',
-        'a_surface_ace_steph_rd',
-        'b_surface_return_ace_steph_rd',
 
         'surface_return_ace_steph_rating_diff',
         'a_surface_return_ace_steph_rating',
         'b_surface_ace_steph_rating',
-        'a_surface_return_ace_steph_rd',
-        'b_surface_ace_steph_rd',
 
         'surface_first_won_steph_rating_diff',
         'a_surface_first_won_steph_rating',
         'b_surface_return_first_won_steph_rating',
-        'a_surface_first_won_steph_rd',
-        'b_surface_return_first_won_steph_rd',
 
         'surface_return_first_won_steph_rating_diff',
         'a_surface_return_first_won_steph_rating',
         'b_surface_first_won_steph_rating',
-        'a_surface_return_first_won_steph_rd',
-        'b_surface_first_won_steph_rd',
 
         'surface_second_won_steph_rating_diff',
         'a_surface_second_won_steph_rating',
         'b_surface_return_second_won_steph_rating',
-        'a_surface_second_won_steph_rd',
-        'b_surface_return_second_won_steph_rd',
 
         'surface_return_second_won_steph_rating_diff',
         'a_surface_return_second_won_steph_rating',
         'b_surface_second_won_steph_rating',
-        'a_surface_return_second_won_steph_rd',
-        'b_surface_second_won_steph_rd',
 
         'sets',
         'games',
@@ -277,11 +266,13 @@ async def prior_games(df: pd.DataFrame, enddate: datetime.date):
 
         'a_odds',
         'b_odds',
+        'point_diff',
         'a_b_win',
     ]
-    # print(len(game_header))
+    print(len(game_header))
 
-    new_format = pd.DataFrame(np.nan, index=range(0, len(matches_df)), columns=game_header)
+    # new_format = pd.DataFrame(np.nan, index=range(0, len(matches_df)), columns=game_header)
+    new_format = pd.DataFrame(np.nan, index=range(0, len(matches_df) * 2), columns=game_header)
 
     tasks = []
     # For surfaces + total steph
@@ -292,7 +283,16 @@ async def prior_games(df: pd.DataFrame, enddate: datetime.date):
         pbar.update(1)
 
     async def update_games(new_format: pd.DataFrame, index, row, players_steph, surface_players_steph):
-        new_format.iloc[index] = pd.Series(await create_new_game_df(row, players_steph, surface_players_steph))
+        # new_format.iloc[index] = pd.Series(await create_new_game_df(row, players_steph, surface_players_steph))
+
+        original, flipped = await create_new_game_df(row, players_steph, surface_players_steph)
+        # print(len(original))
+        # print(len(flipped))
+
+        new_format.iloc[index * 2] = pd.Series(original)
+        new_format.iloc[index * 2 + 1] = pd.Series(flipped)
+
+
 
     for index, row in matches_df.iterrows():
         if row['surface'] == "Grass":
@@ -320,7 +320,7 @@ async def prior_games(df: pd.DataFrame, enddate: datetime.date):
 
     pbar.close()
 
-    new_format.to_csv(f'testcsvs/StephFixRP{RATING_PERIOD}.csv', index=False)
+    new_format.to_csv(f'testcsvs/StephFixDouble{RATING_PERIOD}.csv', index=False)
 
     return new_format
 
@@ -353,7 +353,8 @@ async def create_new_game_df(game, players_steph, player_surface_stephs):
 
 
     #For testing over/under games/sets/tiebreaks
-    w_games, l_games, w_sets, l_sets, _, _, total_tiebreaks = get_score_stats(game)
+    w_games, l_games, w_sets, l_sets, _, _, total_tiebreaks, w_points, l_points = get_score_stats(game)
+    new_point_diff = w_points - l_points
     total_sets = w_sets+l_sets
     total_games = w_games + l_games
     # print(total_games)
@@ -374,6 +375,7 @@ async def create_new_game_df(game, players_steph, player_surface_stephs):
         player_a_odds, player_b_odds = w_odds, l_odds
         player_a_age, player_b_age = w_age, l_age
         a_b_win = 1
+        point_diff = new_point_diff
     else:
         player_a, player_b = l_player, w_player
         player_a_hand, player_b_hand = l_hand, w_hand
@@ -383,6 +385,7 @@ async def create_new_game_df(game, players_steph, player_surface_stephs):
         player_a_odds, player_b_odds = l_odds, w_odds
         player_a_age, player_b_age = l_age, w_age
         a_b_win = 0
+        point_diff = -new_point_diff
 
     player_a_hand = 1 if player_a_hand == 'R' else 0
     player_b_hand = 1 if player_b_hand == 'R' else 0
@@ -441,74 +444,50 @@ async def create_new_game_df(game, players_steph, player_surface_stephs):
         a_player_stephs['game_steph_rating'].getRating() - b_player_stephs['game_steph_rating'].getRating(),
         a_player_stephs['game_steph_rating'].getRating(),
         b_player_stephs['game_steph_rating'].getRating(),
-        a_player_stephs['game_steph_rating'].updateGetVar(),
-        b_player_stephs['game_steph_rating'].updateGetVar(),
 
         a_player_stephs['set_steph_rating'].getRating() - b_player_stephs['set_steph_rating'].getRating(),
         a_player_stephs['set_steph_rating'].getRating(),
         b_player_stephs['set_steph_rating'].getRating(),
-        a_player_stephs['set_steph_rating'].updateGetVar(),
-        b_player_stephs['set_steph_rating'].updateGetVar(),
         
         a_player_stephs['service_game_steph_rating'].getRating() - b_player_stephs['return_game_steph_rating'].getRating(),
         a_player_stephs['service_game_steph_rating'].getRating(),
         b_player_stephs['return_game_steph_rating'].getRating(),
-        a_player_stephs['service_game_steph_rating'].updateGetVar(),
-        b_player_stephs['return_game_steph_rating'].updateGetVar(),
         
         a_player_stephs['return_game_steph_rating'].getRating() - b_player_stephs['service_game_steph_rating'].getRating(),
         a_player_stephs['return_game_steph_rating'].getRating(),
         b_player_stephs['service_game_steph_rating'].getRating(),
-        a_player_stephs['return_game_steph_rating'].updateGetVar(),
-        b_player_stephs['service_game_steph_rating'].updateGetVar(),
 
         a_player_stephs['tie_break_steph_rating'].getRating() - b_player_stephs['tie_break_steph_rating'].getRating(),
         a_player_stephs['tie_break_steph_rating'].getRating(),
         b_player_stephs['tie_break_steph_rating'].getRating(),
-        a_player_stephs['tie_break_steph_rating'].updateGetVar(),
-        b_player_stephs['tie_break_steph_rating'].updateGetVar(),
 
         a_player_stephs['bp_steph_rating'].getRating() - b_player_stephs['bp_steph_rating'].getRating(),
         a_player_stephs['bp_steph_rating'].getRating(),
         b_player_stephs['bp_steph_rating'].getRating(),
-        a_player_stephs['bp_steph_rating'].updateGetVar(),
-        b_player_stephs['bp_steph_rating'].updateGetVar(),
         
         a_player_stephs['ace_steph_rating'].getRating() - b_player_stephs['return_ace_steph_rating'].getRating(),
         a_player_stephs['ace_steph_rating'].getRating(),
         b_player_stephs['return_ace_steph_rating'].getRating(),
-        a_player_stephs['ace_steph_rating'].updateGetVar(),
-        b_player_stephs['return_ace_steph_rating'].updateGetVar(),
         
         a_player_stephs['return_ace_steph_rating'].getRating() - b_player_stephs['ace_steph_rating'].getRating(),
         a_player_stephs['return_ace_steph_rating'].getRating(),
         b_player_stephs['ace_steph_rating'].getRating(),
-        a_player_stephs['return_ace_steph_rating'].updateGetVar(),
-        b_player_stephs['ace_steph_rating'].updateGetVar(),
 
         a_player_stephs['first_won_steph_rating'].getRating() - b_player_stephs['return_first_won_steph_rating'].getRating(),
         a_player_stephs['first_won_steph_rating'].getRating(),
         b_player_stephs['return_first_won_steph_rating'].getRating(),
-        a_player_stephs['first_won_steph_rating'].updateGetVar(),
-        b_player_stephs['return_first_won_steph_rating'].updateGetVar(),
         
         a_player_stephs['return_first_won_steph_rating'].getRating() - b_player_stephs['first_won_steph_rating'].getRating(),
         a_player_stephs['return_first_won_steph_rating'].getRating(),
         b_player_stephs['first_won_steph_rating'].getRating(),
-        a_player_stephs['return_first_won_steph_rating'].updateGetVar(),
-        b_player_stephs['first_won_steph_rating'].updateGetVar(),
 
         a_player_stephs['second_won_steph_rating'].getRating() - b_player_stephs['return_second_won_steph_rating'].getRating(),
         a_player_stephs['second_won_steph_rating'].getRating(),
         b_player_stephs['return_second_won_steph_rating'].getRating(),
-        a_player_stephs['second_won_steph_rating'].updateGetVar(),
-        b_player_stephs['return_second_won_steph_rating'].updateGetVar(),
-        
+
         a_player_stephs['return_second_won_steph_rating'].getRating() - b_player_stephs['second_won_steph_rating'].getRating(),
         a_player_stephs['return_second_won_steph_rating'].getRating(),
         b_player_stephs['second_won_steph_rating'].getRating(),
-        a_player_stephs['return_second_won_steph_rating'].updateGetVar(),
-        b_player_stephs['second_won_steph_rating'].updateGetVar(),
 
         # Surface-specific Glicko ratings        
         a_surface_stephs['steph_rating'].getRating() - b_surface_stephs['steph_rating'].getRating(),
@@ -526,74 +505,50 @@ async def create_new_game_df(game, players_steph, player_surface_stephs):
         a_surface_stephs['game_steph_rating'].getRating() - b_surface_stephs['game_steph_rating'].getRating(),
         a_surface_stephs['game_steph_rating'].getRating(),
         b_surface_stephs['game_steph_rating'].getRating(),
-        a_surface_stephs['game_steph_rating'].updateGetVar(),
-        b_surface_stephs['game_steph_rating'].updateGetVar(),
 
         a_surface_stephs['set_steph_rating'].getRating() - b_surface_stephs['set_steph_rating'].getRating(),
         a_surface_stephs['set_steph_rating'].getRating(),
         b_surface_stephs['set_steph_rating'].getRating(),
-        a_surface_stephs['set_steph_rating'].updateGetVar(),
-        b_surface_stephs['set_steph_rating'].updateGetVar(),
         
         a_surface_stephs['service_game_steph_rating'].getRating() - b_surface_stephs['return_game_steph_rating'].getRating(),
         a_surface_stephs['service_game_steph_rating'].getRating(),
         b_surface_stephs['return_game_steph_rating'].getRating(),
-        a_surface_stephs['service_game_steph_rating'].updateGetVar(),
-        b_surface_stephs['return_game_steph_rating'].updateGetVar(),
         
         a_surface_stephs['return_game_steph_rating'].getRating() - b_surface_stephs['service_game_steph_rating'].getRating(),
         a_surface_stephs['return_game_steph_rating'].getRating(),
         b_surface_stephs['service_game_steph_rating'].getRating(),
-        a_surface_stephs['return_game_steph_rating'].updateGetVar(),
-        b_surface_stephs['service_game_steph_rating'].updateGetVar(),
 
         a_surface_stephs['tie_break_steph_rating'].getRating() - b_surface_stephs['tie_break_steph_rating'].getRating(),
         a_surface_stephs['tie_break_steph_rating'].getRating(),
         b_surface_stephs['tie_break_steph_rating'].getRating(),
-        a_surface_stephs['tie_break_steph_rating'].updateGetVar(),
-        b_surface_stephs['tie_break_steph_rating'].updateGetVar(),
 
         a_surface_stephs['bp_steph_rating'].getRating() - b_surface_stephs['bp_steph_rating'].getRating(),
         a_surface_stephs['bp_steph_rating'].getRating(),
         b_surface_stephs['bp_steph_rating'].getRating(),
-        a_surface_stephs['bp_steph_rating'].updateGetVar(),
-        b_surface_stephs['bp_steph_rating'].updateGetVar(),
-        
+
         a_surface_stephs['ace_steph_rating'].getRating() - b_surface_stephs['return_ace_steph_rating'].getRating(),
         a_surface_stephs['ace_steph_rating'].getRating(),
         b_surface_stephs['return_ace_steph_rating'].getRating(),
-        a_surface_stephs['ace_steph_rating'].updateGetVar(),
-        b_surface_stephs['return_ace_steph_rating'].updateGetVar(),
         
         a_surface_stephs['return_ace_steph_rating'].getRating() - b_surface_stephs['ace_steph_rating'].getRating(),
         a_surface_stephs['return_ace_steph_rating'].getRating(),
         b_surface_stephs['ace_steph_rating'].getRating(),
-        a_surface_stephs['return_ace_steph_rating'].updateGetVar(),
-        b_surface_stephs['ace_steph_rating'].updateGetVar(),
 
         a_surface_stephs['first_won_steph_rating'].getRating() - b_surface_stephs['return_first_won_steph_rating'].getRating(),
         a_surface_stephs['first_won_steph_rating'].getRating(),
         b_surface_stephs['return_first_won_steph_rating'].getRating(),
-        a_surface_stephs['first_won_steph_rating'].updateGetVar(),
-        b_surface_stephs['return_first_won_steph_rating'].updateGetVar(),
         
         a_surface_stephs['return_first_won_steph_rating'].getRating() - b_surface_stephs['first_won_steph_rating'].getRating(),
         a_surface_stephs['return_first_won_steph_rating'].getRating(),
         b_surface_stephs['first_won_steph_rating'].getRating(),
-        a_surface_stephs['return_first_won_steph_rating'].updateGetVar(),
-        b_surface_stephs['first_won_steph_rating'].updateGetVar(),
 
         a_surface_stephs['second_won_steph_rating'].getRating() - b_surface_stephs['return_second_won_steph_rating'].getRating(),
         a_surface_stephs['second_won_steph_rating'].getRating(),
         b_surface_stephs['return_second_won_steph_rating'].getRating(),
-        a_surface_stephs['second_won_steph_rating'].updateGetVar(),
-        b_surface_stephs['return_second_won_steph_rating'].updateGetVar(),
         
         a_surface_stephs['return_second_won_steph_rating'].getRating() - b_surface_stephs['second_won_steph_rating'].getRating(),
         a_surface_stephs['return_second_won_steph_rating'].getRating(),
         b_surface_stephs['second_won_steph_rating'].getRating(),
-        a_surface_stephs['return_second_won_steph_rating'].updateGetVar(),
-        b_surface_stephs['second_won_steph_rating'].updateGetVar(),
 
         total_sets,
         total_games,
@@ -601,8 +556,172 @@ async def create_new_game_df(game, players_steph, player_surface_stephs):
 
         player_a_odds,
         player_b_odds,
+        point_diff,
         a_b_win
     ]
 
-    return game_entry
+    flipped_game_entry = [
+        game['tourney_id'],
+        game['tourney_name'],
+        date,
+        game['surface'],
+        game['best_of'],
+        game['match_num'],
+        tourney_level,
+        tourney_round,
+        0,
+        player_b,
+        player_b_age,
+        player_b_hand,
+        player_b_ht,
+        '',
+        player_b_rank,
+        player_b_rank_points,
+        0,
+        player_a,
+        player_a_age,
+        player_a_hand,
+        player_a_ht,
+        '',
+        player_a_rank,
+        player_a_rank_points,
+
+        -(player_a_rank - player_b_rank),
+        -(player_a_rank_points - player_b_rank_points),
+        -(player_a_age - player_b_age),
+        -(player_a_ht - player_b_ht),
+
+        b_player_stephs['steph_rating'].getRating() - a_player_stephs['steph_rating'].getRating(),
+        b_player_stephs['steph_rating'].getRating(),
+        a_player_stephs['steph_rating'].getRating(),
+        b_player_stephs['steph_rating'].updateGetVar(),
+        a_player_stephs['steph_rating'].updateGetVar(),
+
+        b_player_stephs['point_steph_rating'].getRating() - a_player_stephs['point_steph_rating'].getRating(),
+        b_player_stephs['point_steph_rating'].getRating(),
+        a_player_stephs['point_steph_rating'].getRating(),
+        b_player_stephs['point_steph_rating'].updateGetVar(),
+        a_player_stephs['point_steph_rating'].updateGetVar(),
+
+        b_player_stephs['game_steph_rating'].getRating() - a_player_stephs['game_steph_rating'].getRating(),
+        b_player_stephs['game_steph_rating'].getRating(),
+        a_player_stephs['game_steph_rating'].getRating(),
+
+        b_player_stephs['set_steph_rating'].getRating() - a_player_stephs['set_steph_rating'].getRating(),
+        b_player_stephs['set_steph_rating'].getRating(),
+        a_player_stephs['set_steph_rating'].getRating(),
+        
+        b_player_stephs['service_game_steph_rating'].getRating() - a_player_stephs['return_game_steph_rating'].getRating(),
+        b_player_stephs['service_game_steph_rating'].getRating(),
+        a_player_stephs['return_game_steph_rating'].getRating(),
+        
+        b_player_stephs['return_game_steph_rating'].getRating() - a_player_stephs['service_game_steph_rating'].getRating(),
+        b_player_stephs['return_game_steph_rating'].getRating(),
+        a_player_stephs['service_game_steph_rating'].getRating(),
+
+        b_player_stephs['tie_break_steph_rating'].getRating() - a_player_stephs['tie_break_steph_rating'].getRating(),
+        b_player_stephs['tie_break_steph_rating'].getRating(),
+        a_player_stephs['tie_break_steph_rating'].getRating(),
+
+        b_player_stephs['bp_steph_rating'].getRating() - a_player_stephs['bp_steph_rating'].getRating(),
+        b_player_stephs['bp_steph_rating'].getRating(),
+        a_player_stephs['bp_steph_rating'].getRating(),
+        
+        b_player_stephs['ace_steph_rating'].getRating() - a_player_stephs['return_ace_steph_rating'].getRating(),
+        b_player_stephs['ace_steph_rating'].getRating(),
+        a_player_stephs['return_ace_steph_rating'].getRating(),
+        
+        b_player_stephs['return_ace_steph_rating'].getRating() - a_player_stephs['ace_steph_rating'].getRating(),
+        b_player_stephs['return_ace_steph_rating'].getRating(),
+        a_player_stephs['ace_steph_rating'].getRating(),
+
+        b_player_stephs['first_won_steph_rating'].getRating() - a_player_stephs['return_first_won_steph_rating'].getRating(),
+        b_player_stephs['first_won_steph_rating'].getRating(),
+        a_player_stephs['return_first_won_steph_rating'].getRating(),
+        
+        b_player_stephs['return_first_won_steph_rating'].getRating() - a_player_stephs['first_won_steph_rating'].getRating(),
+        b_player_stephs['return_first_won_steph_rating'].getRating(),
+        a_player_stephs['first_won_steph_rating'].getRating(),
+
+        b_player_stephs['second_won_steph_rating'].getRating() - a_player_stephs['return_second_won_steph_rating'].getRating(),
+        b_player_stephs['second_won_steph_rating'].getRating(),
+        a_player_stephs['return_second_won_steph_rating'].getRating(),
+
+        b_player_stephs['return_second_won_steph_rating'].getRating() - a_player_stephs['second_won_steph_rating'].getRating(),
+        b_player_stephs['return_second_won_steph_rating'].getRating(),
+        a_player_stephs['second_won_steph_rating'].getRating(),
+
+        # Surface-specific Glicko ratings        
+        b_surface_stephs['steph_rating'].getRating() - a_surface_stephs['steph_rating'].getRating(),
+        b_surface_stephs['steph_rating'].getRating(),
+        a_surface_stephs['steph_rating'].getRating(),
+        b_surface_stephs['steph_rating'].updateGetVar(),
+        a_surface_stephs['steph_rating'].updateGetVar(),
+
+        b_surface_stephs['point_steph_rating'].getRating() - a_surface_stephs['point_steph_rating'].getRating(),
+        b_surface_stephs['point_steph_rating'].getRating(),
+        a_surface_stephs['point_steph_rating'].getRating(),
+        b_surface_stephs['point_steph_rating'].updateGetVar(),
+        a_surface_stephs['point_steph_rating'].updateGetVar(),
+
+        b_surface_stephs['game_steph_rating'].getRating() - a_surface_stephs['game_steph_rating'].getRating(),
+        b_surface_stephs['game_steph_rating'].getRating(),
+        a_surface_stephs['game_steph_rating'].getRating(),
+
+        b_surface_stephs['set_steph_rating'].getRating() - a_surface_stephs['set_steph_rating'].getRating(),
+        b_surface_stephs['set_steph_rating'].getRating(),
+        a_surface_stephs['set_steph_rating'].getRating(),
+        
+        b_surface_stephs['service_game_steph_rating'].getRating() - a_surface_stephs['return_game_steph_rating'].getRating(),
+        b_surface_stephs['service_game_steph_rating'].getRating(),
+        a_surface_stephs['return_game_steph_rating'].getRating(),
+        
+        b_surface_stephs['return_game_steph_rating'].getRating() - a_surface_stephs['service_game_steph_rating'].getRating(),
+        b_surface_stephs['return_game_steph_rating'].getRating(),
+        a_surface_stephs['service_game_steph_rating'].getRating(),
+
+        b_surface_stephs['tie_break_steph_rating'].getRating() - a_surface_stephs['tie_break_steph_rating'].getRating(),
+        b_surface_stephs['tie_break_steph_rating'].getRating(),
+        a_surface_stephs['tie_break_steph_rating'].getRating(),
+
+        b_surface_stephs['bp_steph_rating'].getRating() - a_surface_stephs['bp_steph_rating'].getRating(),
+        b_surface_stephs['bp_steph_rating'].getRating(),
+        a_surface_stephs['bp_steph_rating'].getRating(),
+        
+        b_surface_stephs['ace_steph_rating'].getRating() - a_surface_stephs['return_ace_steph_rating'].getRating(),
+        b_surface_stephs['ace_steph_rating'].getRating(),
+        a_surface_stephs['return_ace_steph_rating'].getRating(),
+        
+        b_surface_stephs['return_ace_steph_rating'].getRating() - a_surface_stephs['ace_steph_rating'].getRating(),
+        b_surface_stephs['return_ace_steph_rating'].getRating(),
+        a_surface_stephs['ace_steph_rating'].getRating(),
+
+        b_surface_stephs['first_won_steph_rating'].getRating() - a_surface_stephs['return_first_won_steph_rating'].getRating(),
+        b_surface_stephs['first_won_steph_rating'].getRating(),
+        a_surface_stephs['return_first_won_steph_rating'].getRating(),
+        
+        b_surface_stephs['return_first_won_steph_rating'].getRating() - a_surface_stephs['first_won_steph_rating'].getRating(),
+        b_surface_stephs['return_first_won_steph_rating'].getRating(),
+        a_surface_stephs['first_won_steph_rating'].getRating(),
+
+        b_surface_stephs['second_won_steph_rating'].getRating() - a_surface_stephs['return_second_won_steph_rating'].getRating(),
+        b_surface_stephs['second_won_steph_rating'].getRating(),
+        a_surface_stephs['return_second_won_steph_rating'].getRating(),
+
+        b_surface_stephs['return_second_won_steph_rating'].getRating() - a_surface_stephs['second_won_steph_rating'].getRating(),
+        b_surface_stephs['return_second_won_steph_rating'].getRating(),
+        a_surface_stephs['second_won_steph_rating'].getRating(),
+
+        total_sets,
+        total_games,
+        total_tiebreaks,
+
+        player_b_odds,
+        player_a_odds,
+        -point_diff,
+        1-a_b_win
+    ]
+
+    return game_entry, flipped_game_entry
+
 
