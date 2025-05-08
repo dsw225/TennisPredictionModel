@@ -142,7 +142,7 @@ class Command(BaseCommand):
                 content = await f.read()
                 return pd.read_excel(io.BytesIO(content), engine='xlrd', parse_dates=['Date'])  # Use xlrd for .xls files
         except Exception as e:
-            # print(f"Exception: {e}")
+            print(f"Exception: {e}")
             try:
                 async with aiofiles.open(path + 'x', 'rb') as f:  # Attempt to open as .xlsx
                     print(f"{path+'x'}, being read + added")
